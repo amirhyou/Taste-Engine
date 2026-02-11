@@ -1,0 +1,12 @@
+{
+  "name": "taste-engine-node-cli-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.mjs",
+    "test": "echo 'No tests'",
+    "build": "echo 'No build step'",
+    "lint": "echo 'No lint step'",
+    "typecheck": "echo 'No typecheck step'"
+  }
+}

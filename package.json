@@ -1,0 +1,16 @@
+{
+  "name": "taste-engine",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Monorepo for Taste Engine packages",
+  "workspaces": [
+    "packages/*",
+    "examples/*"
+  ],
+  "scripts": {
+    "build": "npm run -ws build",
+    "test": "npm run -ws test",
+    "lint": "npm run -ws lint",
+    "typecheck": "npm run -ws typecheck"
+  }
+}
