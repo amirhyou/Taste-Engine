@@ -4,8 +4,21 @@
 
 ## Current Position
 - **Phase**: 1 (Internal Core)
-- **Task**: Execution & Verification complete
-- **Status**: ✅ Phase 1 Complete
+- **Task**: Planning complete
+- **Status**: Ready for execution
+
+## Phases
+### Phase 1: v0.1 (Internal Core)
+- [x] Research
+- [x] Planning
+- [x] Execution (Verified)
+
+### Phase 2: v0.2 (Hardening)
+- [x] Research
+- [x] Planning
+- [ ] Execution
+    - [ ] 2.1: Cycle Guardrails
+    - [ ] 2.2: Performance & Tuning
 
 ## Phases
 ### Phase 1: v0.1 (Internal Core)
