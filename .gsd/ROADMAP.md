@@ -13,7 +13,7 @@
 ## Phases
 
 ### Phase 1: v0.1 (Internal Core)
-**Status**: ⬜ Not Started
+**Status**: ✅ Complete (Verified)
 **Objective**: Core engine with TrueSkill-like model, boundary selector, confidence, and seeding.
 **Scope**:
 - [ ] Implement `Core types` and `ComparisonEvent`

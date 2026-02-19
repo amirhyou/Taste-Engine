@@ -4,18 +4,18 @@
 
 ## Current Position
 - **Phase**: 1 (Internal Core)
-- **Task**: Planning complete
-- **Status**: Ready for execution
+- **Task**: Execution & Verification complete
+- **Status**: ✅ Phase 1 Complete
 
 ## Phases
 ### Phase 1: v0.1 (Internal Core)
 - [x] Research
 - [x] Planning
-- [ ] Execution
-    - [ ] 1.1: Foundation (Types, Math, RNG)
-    - [ ] 1.2: Core Model
-    - [ ] 1.3: Selection & Confidence
-    - [ ] 1.4: Lifecycle, Stopping & API
+- [x] Execution
+    - [x] 1.1: Foundation (Types, Math, RNG)
+    - [x] 1.2: Core Model
+    - [x] 1.3: Selection & Confidence
+    - [x] 1.4: Lifecycle, Stopping & API
 
 ## Next Steps
-1. `/execute 1` — Run the plans
+1. `/plan 2` — Plan Phase 2 (Hardening)
