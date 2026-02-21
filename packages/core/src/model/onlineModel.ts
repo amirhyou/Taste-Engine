@@ -1,14 +1,15 @@
-import { ComparisonEvent, DecayConfig, ItemId, ItemState } from '../types.js';
+import { ComparisonEvent, ItemId, ItemState, RunConfig } from '../types.js';
 import { eventWeight } from '../utils/decay.js';
+import { cdf, pdf } from '../utils/statistics.js';
 
 const DEFAULT_MU = 25;
 const DEFAULT_SIGMA = 8.333;
-const MIN_SIGMA = 1;
+const MIN_SIGMA = 0.001; // Avoid divide by zero, but allow getting confident
 
 export class OnlineModel {
   private readonly states = new Map<ItemId, ItemState>();
 
-  constructor(private readonly decay: DecayConfig) {}
+  constructor(private readonly config: RunConfig) { }
 
   ensureItem(itemId: ItemId): void {
     if (this.states.has(itemId)) return;
@@ -25,32 +26,68 @@ export class OnlineModel {
     this.ensureItem(event.a);
     this.ensureItem(event.b);
 
-    if (event.result === 'skip') return;
+    if (event.result === 'skip' || event.result === 'tie') return; // Tie support TODO if needed
 
-    const a = this.states.get(event.a)!;
-    const b = this.states.get(event.b)!;
-    const w = eventWeight(event, now, this.decay);
-    if (w <= 0) return;
+    const itemA = this.states.get(event.a)!;
+    const itemB = this.states.get(event.b)!; // Copies reference
 
-    const pA = this.predict(event.a, event.b);
-    let sA = 0.5;
-    if (event.result === 'a') sA = 1;
-    if (event.result === 'b') sA = 0;
+    // Apply time decay weight
+    const weight = eventWeight(event, now, this.config.decay);
+    if (weight <= 0) return;
 
-    const k = 1.4 * w;
-    const delta = k * (sA - pA);
+    // Add dynamics factor (increase uncertainty before update)
+    // sigma^2 <- sigma^2 + tau^2
+    const tau2 = this.config.tau * this.config.tau;
+    itemA.sigma = Math.sqrt(itemA.sigma * itemA.sigma + tau2);
+    itemB.sigma = Math.sqrt(itemB.sigma * itemB.sigma + tau2);
 
-    a.mu += delta * (1 + a.sigma / 20);
-    b.mu -= delta * (1 + b.sigma / 20);
-    a.sigma = Math.max(MIN_SIGMA, a.sigma * (1 - 0.03 * w));
-    b.sigma = Math.max(MIN_SIGMA, b.sigma * (1 - 0.03 * w));
+    // Determine Winner and Loser
+    let winner: ItemState;
+    let loser: ItemState;
+    if (event.result === 'a') {
+      winner = itemA;
+      loser = itemB;
+    } else {
+      winner = itemB;
+      loser = itemA;
+    }
 
-    a.games += 1;
-    b.games += 1;
-    if (event.result === 'a') a.wins += 1;
-    if (event.result === 'b') b.wins += 1;
-    a.uniqueOpponents.add(event.b);
-    b.uniqueOpponents.add(event.a);
+    // TrueSkill Update (Two player, no draw)
+    const beta2 = this.config.beta * this.config.beta;
+    const c = Math.sqrt(2 * beta2 + winner.sigma * winner.sigma + loser.sigma * loser.sigma);
+    const diff = winner.mu - loser.mu;
+    const t = diff / c;
+
+    const v = pdf(t) / cdf(t);
+    const w = v * (v + t);
+
+    const winnerMeanDelta = (winner.sigma * winner.sigma / c) * v;
+    const loserMeanDelta = (loser.sigma * loser.sigma / c) * v;
+    const winnerSigmaDelta = (winner.sigma * winner.sigma / (c * c)) * w;
+    const loserSigmaDelta = (loser.sigma * loser.sigma / (c * c)) * w;
+
+    // Apply updates weighted by time decay
+    winner.mu += winnerMeanDelta * weight;
+    loser.mu -= loserMeanDelta * weight;
+
+    // Update variance
+    // new_sigma^2 = old_sigma^2 * (1 - coeff * w)
+    // We linearly interpolate the variance reduction by weight
+    const winnerVar = winner.sigma * winner.sigma;
+    const loserVar = loser.sigma * loser.sigma;
+
+    // Standard update: newVar = oldVar * (1 - (oldVar/c^2) * w)
+    // With weight: newVar = oldVar - (oldVar * (oldVar/c^2) * w) * weight
+    winner.sigma = Math.sqrt(Math.max(MIN_SIGMA, winnerVar * (1 - (winnerVar / (c * c)) * w * weight)));
+    loser.sigma = Math.sqrt(Math.max(MIN_SIGMA, loserVar * (1 - (loserVar / (c * c)) * w * weight)));
+
+    // Update Meta
+    itemA.games += 1;
+    itemB.games += 1;
+    if (event.result === 'a') itemA.wins += 1;
+    if (event.result === 'b') itemB.wins += 1;
+    itemA.uniqueOpponents.add(event.b);
+    itemB.uniqueOpponents.add(event.a);
   }
 
   get(itemId: ItemId): ItemState {
@@ -63,9 +100,11 @@ export class OnlineModel {
     this.ensureItem(bId);
     const a = this.states.get(aId)!;
     const b = this.states.get(bId)!;
-    const spread = Math.sqrt(a.sigma * a.sigma + b.sigma * b.sigma);
-    const z = (a.mu - b.mu) / Math.max(1e-6, spread);
-    return 1 / (1 + Math.exp(-z));
+
+    const beta2 = this.config.beta * this.config.beta;
+    // Prob(A > B) = cdf((muA - muB) / sqrt(2*beta^2 + sigmaA^2 + sigmaB^2))
+    const denom = Math.sqrt(2 * beta2 + a.sigma * a.sigma + b.sigma * b.sigma);
+    return cdf((a.mu - b.mu) / denom);
   }
 
   sampleScores(itemIds: ItemId[], rng: () => number): Map<ItemId, number> {
@@ -76,10 +115,6 @@ export class OnlineModel {
       sampled.set(itemId, s.mu + n * s.sigma);
     }
     return sampled;
-  }
-
-  itemIds(): ItemId[] {
-    return [...this.states.keys()];
   }
 }
 

@@ -25,14 +25,14 @@
 - [ ] Create basic unit tests for core logic
 
 ### Phase 2: v0.2 (Hardening)
-**Status**: ⬜ Not Started
+**Status**: ✅ Complete (Verified)
 **Objective**: Enhance robustness with cycle guardrails, improved heuristics, and performance tuning.
 **Scope**:
-- [ ] Implement `Cycle Guardrail` (Win graph, cycle detection)
-- [ ] Tune pooling heuristics (start/tight pool sizes)
-- [ ] Add more pair selection strategies (exploration mixing)
-- [ ] Performance benchmarks (n=5,000, k=50)
-- [ ] Optimize `nextPair` and `status` sampling
+- [x] Implement `Cycle Guardrail` (Win graph, cycle detection)
+- [x] Tune pooling heuristics (start/tight pool sizes)
+- [x] Add more pair selection strategies (exploration mixing)
+- [x] Performance benchmarks (n=5,000, k=50)
+- [x] Optimize `nextPair` and `status` sampling
 
 ### Phase 3: v1.0 (Release)
 **Status**: ⬜ Not Started

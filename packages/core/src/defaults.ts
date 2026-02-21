@@ -6,6 +6,8 @@ const boundaryFn = (floor: number, ratio: number) => (k: number) => Math.max(flo
 export const defaultRunConfig: RunConfig = {
   k: 10,
   q: 0.8,
+  tau: 0.083, // 8.333 / 100
+  beta: 4.167, // 8.333 / 2
   decay: { type: 'exp', halfLifeDays: 30 },
   pool: {
     start: poolFn(8, 80),

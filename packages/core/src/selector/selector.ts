@@ -15,7 +15,7 @@ export type SelectorContext = {
 export const pairKey = (a: ItemId, b: ItemId): string => (a < b ? `${a}::${b}` : `${b}::${a}`);
 
 export class BoundarySelector {
-  constructor(private readonly config: RunConfig) {}
+  constructor(private readonly config: RunConfig) { }
 
   nextPair(ctx: SelectorContext): PairRecommendation {
     const ranked = [...ctx.pool].sort((a, b) => ctx.model.get(b).mu - ctx.model.get(a).mu);
@@ -35,8 +35,23 @@ export class BoundarySelector {
       .filter((item) => (ctx.pairCounts.get(pairKey(a, item)) ?? 0) < this.config.repeatCapPerPair);
 
     if (candidateB.length === 0) {
-      const fallback = ctx.pool.find((item) => item !== a) ?? a;
-      return buildMeta(a, fallback, ranked, ctx.model, ctx.pairCounts, ctx.k);
+      // Smart Fallback: Pick opponent with lowest pair count
+      let minCount = Infinity;
+      let candidates: ItemId[] = [];
+
+      for (const item of ctx.pool) {
+        if (item === a) continue;
+        const count = ctx.pairCounts.get(pairKey(a, item)) ?? 0;
+        if (count < minCount) {
+          minCount = count;
+          candidates = [item];
+        } else if (count === minCount) {
+          candidates.push(item);
+        }
+      }
+
+      const bestFallback = candidates.length > 0 ? pickOne(candidates, ctx.rng) : (ctx.pool.find((item) => item !== a) ?? a);
+      return buildMeta(a, bestFallback, ranked, ctx.model, ctx.pairCounts, ctx.k);
     }
 
     const bestB = candidateB

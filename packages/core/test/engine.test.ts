@@ -19,7 +19,7 @@ describe('Engine', () => {
 
   it('respects repeat cap via selector', () => {
     const engine = new Engine({ repeatCapPerPair: 1 });
-    engine.addItems(['a', 'b', 'c']);
+    engine.addItems(['a', 'b', 'c', 'd', 'e']);
 
     const first = engine.nextPair();
     engine.ingest({ a: first.a, b: first.b, result: 'a', t: Date.now() });

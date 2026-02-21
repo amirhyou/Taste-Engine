@@ -1,6 +1,9 @@
+
+
 import { computeConfidence } from '../confidence/confidence.js';
 import { defaultRunConfig, serializableDefaults } from '../defaults.js';
 import { OnlineModel } from '../model/onlineModel.js';
+import { findSCCs } from '../utils/graph.js';
 import { BoundarySelector, pairKey } from '../selector/selector.js';
 import { shouldStop } from '../stopping/stopping.js';
 import {
@@ -24,7 +27,7 @@ export class Engine {
 
   constructor(config: Partial<RunConfig> = {}) {
     this.config = mergeConfig(config);
-    this.model = new OnlineModel(this.config.decay);
+    this.model = new OnlineModel(this.config);
     this.selector = new BoundarySelector(this.config);
   }
 
@@ -95,16 +98,47 @@ export class Engine {
     const ranked = this.rankByMu();
     const confidence = computeConfidence(this.model, ranked, this.config, this.rng);
     const stopDecision = shouldStop(ranked, confidence.pInTopK, this.config);
+    const cycles = this.config.cycleGuard.enabled ? this.findCycles(ranked) : [];
 
     return {
       topKSet: ranked.slice(0, Math.min(this.config.k, ranked.length)),
       stability: confidence.stability,
       pInTopK: confidence.pInTopK,
       contested: confidence.contested,
+      cycles,
       canStop: stopDecision.canStop,
       reason: stopDecision.reason,
       nextSuggestions: [this.nextPair(), this.nextPair()],
     };
+  }
+
+  isConverged(): boolean {
+    return this.status().canStop;
+  }
+
+  findCycles(items: ItemId[]): ItemId[][] {
+    const wins = new Map<string, number>();
+    const graph = new Map<ItemId, ItemId[]>();
+    for (const id of items) graph.set(id, []);
+
+    for (const event of this.eventLog) {
+      if (event.result === 'tie' || event.result === 'skip') continue;
+      const winner = event.result === 'a' ? event.a : event.b;
+      const loser = event.result === 'a' ? event.b : event.a;
+      const key = `${winner}::${loser}`;
+      wins.set(key, (wins.get(key) ?? 0) + 1);
+    }
+
+    for (const [key, count] of wins) {
+      const [winner, loser] = key.split('::');
+      const reverseKey = `${loser}::${winner}`;
+      const reverseCount = wins.get(reverseKey) ?? 0;
+      if (count > reverseCount) {
+        graph.get(winner)?.push(loser);
+      }
+    }
+
+    return findSCCs(graph).filter((c) => c.length > 1);
   }
 
   setK(k: number): void {
@@ -190,7 +224,7 @@ export class Engine {
       }),
     );
 
-    this.model = new OnlineModel(this.config.decay);
+    this.model = new OnlineModel(this.config);
     this.selector = new BoundarySelector(this.config);
 
     for (const item of snapshot.items) {

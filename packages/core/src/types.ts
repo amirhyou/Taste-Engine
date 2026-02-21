@@ -42,6 +42,8 @@ export type CycleGuardConfig = {
 export type RunConfig = {
   k: number;
   q: number;
+  tau: number;
+  beta: number;
   decay: DecayConfig;
   pool: PoolConfig;
   boundaryBand: (k: number) => number;
@@ -81,6 +83,7 @@ export type EngineStatus = {
   stability: number;
   pInTopK: Map<ItemId, number>;
   contested: ItemId[];
+  cycles: ItemId[][];
   canStop: boolean;
   reason: string;
   nextSuggestions: PairRecommendation[];
