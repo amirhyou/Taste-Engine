@@ -5,28 +5,28 @@ import { SpotifyService } from '../services/spotify';
 import { PairStack } from '../components/PairStack';
 import { StrengthSlider } from '../components/StrengthSlider';
 import { engineManager } from '../services/engineManager';
+import { sessionController } from '../services/sessionController';
+
 import ResultScreen from './ResultScreen';
 import PlaylistPicker from './PlaylistPicker';
-import { sessionController } from '../services/sessionController';
 
 export default function VotingScreen() {
     const { token, promptAsync } = useSpotifyAuth();
     const [view, setView] = React.useState<'picker' | 'voter' | 'results'>('picker');
     const [pair, setPair] = React.useState<any>(null);
-    const { stabilityScore, status, refresh } = useEngineStatus();
-
-    let label = status?.reason || 'Loading...';
-    if (stabilityScore > 80) label = 'Almost there!';
-    if (status?.canStop) label = 'Top 10 Locked In! Ready to export?';
+    const [stability, setStability] = React.useState(0);
+    const [message, setMessage] = React.useState('Loading...');
 
     React.useEffect(() => {
         if (token) {
             // Check if we have an active engine and skip picker
             try {
-                const engine = engineManager.getEngine();
-                setPair(engine.nextPair());
+                engineManager.getEngine();
+                sessionController.init();
+                setPair(sessionController.getActivePair());
+                setStability(sessionController.getStability());
+                setMessage(sessionController.getStatusMessage());
                 setView('voter');
-                refresh();
             } catch {
                 setView('picker');
             }
@@ -34,35 +34,26 @@ export default function VotingScreen() {
     }, [token]);
 
     const handlePlaylistSelected = () => {
-        const engine = engineManager.getEngine();
-        setPair(engine.nextPair());
+        sessionController.init();
+        setPair(sessionController.getActivePair());
+        setStability(sessionController.getStability());
+        setMessage(sessionController.getStatusMessage());
         setView('voter');
-        refresh();
     };
 
     const handleVote = async (strength: number) => {
         if (!pair) return;
 
-        const engine = engineManager.getEngine();
-        const winnerId = strength < 0 ? pair.a : pair.b;
-        const isDraw = Math.abs(strength) < 0.1;
+        await sessionController.ingest(strength);
 
-        engine.ingest({
-            a: pair.a,
-            b: pair.b,
-            result: isDraw ? 'tie' : (strength < 0 ? 'a' : 'b'),
-            t: Date.now(),
-        });
-
-        await engineManager.save();
-
-        const next = engine.nextPair();
+        const next = sessionController.getActivePair();
         if (!next) {
             setView('results');
         } else {
             setPair(next);
+            setStability(sessionController.getStability());
+            setMessage(sessionController.getStatusMessage());
         }
-        refresh();
     };
 
     if (!token) {
@@ -91,8 +82,8 @@ export default function VotingScreen() {
             {pair ? (
                 <>
                     <PairStack
-                        itemA={engineManager.getMetadata(pair.a)}
-                        itemB={engineManager.getMetadata(pair.b)}
+                        itemA={sessionController.getMetadata(pair.a)}
+                        itemB={sessionController.getMetadata(pair.b)}
                     />
                     <StrengthSlider onVote={handleVote} />
                     <View style={styles.footer}>
