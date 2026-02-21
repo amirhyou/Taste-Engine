@@ -24,5 +24,10 @@
     - [x] 2.1: Cycle Guardrails
     - [x] 2.2: Performance & Tuning
 
+### Phase 3: v1.0 (Release)
+- [/] Research
+- [/] Planning
+- [ ] Execution
+
 ## Next Steps
-1. `/plan 3` — Plan Phase 3 (Release)
+1. `/execute 3` — Execute Phase 3 (Release)
