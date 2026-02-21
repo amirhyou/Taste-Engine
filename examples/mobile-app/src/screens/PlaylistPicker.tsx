@@ -17,8 +17,8 @@ export default function PlaylistPicker({ onSelected }: PlaylistPickerProps) {
 
     React.useEffect(() => {
         if (token) {
-            SpotifyService.getUserPlaylists(token)
-                .then(setPlaylists)
+            SpotifyService.getPlaylists()
+                .then((data: any) => setPlaylists(data.items || []))
                 .finally(() => setLoading(false));
         }
     }, [token]);
@@ -26,7 +26,8 @@ export default function PlaylistPicker({ onSelected }: PlaylistPickerProps) {
     const handleSelect = async (playlist: any) => {
         setLoading(true);
         try {
-            const tracks = await SpotifyService.getPlaylistTracks(token!, playlist.id);
+            const data = await SpotifyService.getPlaylistTracks(playlist.id);
+            const tracks = data.items.map((i: any) => i.track);
             const itemIds = tracks.map((t: any) => t.id);
             const metadata: Record<string, ItemMetadata> = {};
             tracks.forEach((t: any) => {
