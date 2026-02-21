@@ -1,17 +1,8 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
-
-interface Item {
-    id: string;
-    name: string;
-    artist?: string;
-    imageUrl?: string;
-}
+import { ItemMetadata } from '../services/engineManager';
 
 interface PairStackProps {
-    itemA: Item;
-    itemB: Item;
+    itemA: ItemMetadata;
+    itemB: ItemMetadata;
 }
 
 export const PairStack: React.FC<PairStackProps> = ({ itemA, itemB }) => {
