@@ -55,6 +55,10 @@ export class EngineManager {
         StorageService.setJSON(`${SNAPSHOT_PREFIX}${this.currentPlaylistId}`, snapshot);
     }
 
+    getCurrentPlaylistId(): string | null {
+        return this.currentPlaylistId;
+    }
+
     async clearSession(): Promise<void> {
         if (this.currentPlaylistId) {
             StorageService.delete(`${SNAPSHOT_PREFIX}${this.currentPlaylistId}`);

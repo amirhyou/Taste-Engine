@@ -1,106 +1,88 @@
 import React from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { useSpotifyAuth } from '../services/spotifyAuth';
 import { SpotifyService } from '../services/spotify';
 import { engineManager, ItemMetadata } from '../services/engineManager';
+import { sessionManager } from '../services/sessionManager';
 
-export default function PlaylistPicker({ onSelected }: { onSelected: () => void }) {
+interface PlaylistPickerProps {
+    onSelected: () => void;
+}
+
+export default function PlaylistPicker({ onSelected }: PlaylistPickerProps) {
+    const { token } = useSpotifyAuth();
     const [playlists, setPlaylists] = React.useState<any[]>([]);
     const [loading, setLoading] = React.useState(true);
-    const [selectedPlaylist, setSelectedPlaylist] = React.useState<any>(null);
-    const [targetK, setTargetK] = React.useState<number>(10);
+    const [targetK, setTargetK] = React.useState(20);
 
     React.useEffect(() => {
-        loadPlaylists();
-    }, []);
-
-    const loadPlaylists = async () => {
-        try {
-            const data = await SpotifyService.getPlaylists();
-            setPlaylists(data.items || []);
-        } catch (error) {
-            console.error('Failed to load playlists:', error);
-        } finally {
-            setLoading(false);
+        if (token) {
+            SpotifyService.getUserPlaylists(token)
+                .then(setPlaylists)
+                .finally(() => setLoading(false));
         }
-    };
+    }, [token]);
 
-    const handleStart = async () => {
-        if (!selectedPlaylist) return;
+    const handleSelect = async (playlist: any) => {
         setLoading(true);
         try {
-            const trackData = await SpotifyService.getPlaylistTracks(selectedPlaylist.id);
-
-            const itemIds: string[] = [];
+            const tracks = await SpotifyService.getPlaylistTracks(token!, playlist.id);
+            const itemIds = tracks.map((t: any) => t.id);
             const metadata: Record<string, ItemMetadata> = {};
-
-            trackData.items.forEach((item: any) => {
-                if (item.track) {
-                    itemIds.push(item.track.id);
-                    metadata[item.track.id] = {
-                        id: item.track.id,
-                        name: item.track.name,
-                        artist: item.track.artists?.[0]?.name,
-                        imageUrl: item.track.album?.images?.[0]?.url,
-                    };
-                }
+            tracks.forEach((t: any) => {
+                metadata[t.id] = {
+                    id: t.id,
+                    name: t.name,
+                    artist: t.artists?.[0]?.name,
+                    imageUrl: t.album?.images?.[0]?.url,
+                };
             });
 
-            await engineManager.init(selectedPlaylist.id, itemIds, targetK, metadata);
+            await engineManager.init(playlist.id, itemIds, targetK, metadata);
+            sessionManager.registerSession(playlist.id, playlist.name, targetK);
             onSelected();
-        } catch (error) {
-            console.error('Failed to start session:', error);
+        } catch (err) {
+            console.error('Failed to load playlist', err);
         } finally {
             setLoading(false);
         }
     };
 
-    if (loading && playlists.length === 0) {
+    if (loading) {
         return (
             <View style={styles.centered}>
                 <ActivityIndicator size="large" color="#1DB954" />
-            </View>
-        );
-    }
-
-    if (selectedPlaylist) {
-        return (
-            <View style={styles.container}>
-                <Text style={styles.title}>Target Ranking</Text>
-                <Text style={styles.subtitle}>Choose how many items you want to rank from "{selectedPlaylist.name}"</Text>
-
-                <View style={styles.kOptions}>
-                    {[10, 20, 50, 100].map(k => (
-                        <TouchableOpacity
-                            key={k}
-                            style={[styles.kButton, targetK === k && styles.kButtonActive]}
-                            onPress={() => setTargetK(k)}
-                        >
-                            <Text style={[styles.kText, targetK === k && styles.kTextActive]}>Top {k}</Text>
-                        </TouchableOpacity>
-                    ))}
-                </View>
-
-                <TouchableOpacity style={styles.startButton} onPress={handleStart}>
-                    <Text style={styles.startButtonText}>Start Ranking</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.backButton} onPress={() => setSelectedPlaylist(null)}>
-                    <Text style={styles.backButtonText}>Back to Playlists</Text>
-                </TouchableOpacity>
+                <Text style={styles.text}>Loading your playlists...</Text>
             </View>
         );
     }
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Pick a Playlist</Text>
+            <Text style={styles.title}>Select a Playlist</Text>
+
+            <View style={styles.kPicker}>
+                <Text style={styles.kLabel}>Target: Top {targetK}</Text>
+                <View style={[styles.row, { justifyContent: 'space-around', marginVertical: 10 }]}>
+                    {[10, 20, 50, 100].map(k => (
+                        <TouchableOpacity
+                            key={k}
+                            onPress={() => setTargetK(k)}
+                            style={[styles.kButton, targetK === k && styles.kButtonActive]}
+                        >
+                            <Text style={[styles.kButtonText, targetK === k && styles.kButtonTextActive]}>{k}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            </View>
+
             <FlatList
                 data={playlists}
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => (
-                    <TouchableOpacity style={styles.item} onPress={() => setSelectedPlaylist(item)}>
-                        <Text style={styles.itemName}>{item.name}</Text>
-                        <Text style={styles.itemTracks}>{item.tracks.total} tracks</Text>
+                    <TouchableOpacity style={styles.playlistItem} onPress={() => handleSelect(item)}>
+                        <Text style={styles.playlistName}>{item.name}</Text>
+                        <Text style={styles.playlistSongs}>{item.tracks.total} songs</Text>
                     </TouchableOpacity>
                 )}
             />
@@ -112,84 +94,68 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#121212',
-        padding: 20,
         paddingTop: 60,
     },
     centered: {
         flex: 1,
-        backgroundColor: '#121212',
         justifyContent: 'center',
         alignItems: 'center',
+        backgroundColor: '#121212',
     },
     title: {
         color: '#FFFFFF',
-        fontSize: 28,
+        fontSize: 24,
         fontWeight: 'bold',
-        marginBottom: 10,
+        textAlign: 'center',
+        marginBottom: 20,
     },
-    subtitle: {
-        color: '#B3B3B3',
-        fontSize: 16,
-        marginBottom: 30,
+    text: {
+        color: '#FFFFFF',
+        marginTop: 10,
     },
-    item: {
-        backgroundColor: '#282828',
+    playlistItem: {
         padding: 20,
-        borderRadius: 10,
-        marginBottom: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: '#333',
     },
-    itemName: {
+    playlistName: {
         color: '#FFFFFF',
         fontSize: 18,
         fontWeight: '600',
     },
-    itemTracks: {
+    playlistSongs: {
         color: '#B3B3B3',
         fontSize: 14,
-        marginTop: 5,
+        marginTop: 4,
     },
-    kOptions: {
+    kPicker: {
+        paddingHorizontal: 20,
+        marginBottom: 10,
+    },
+    kLabel: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: '600',
+        textAlign: 'center',
+    },
+    row: {
         flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
-        marginBottom: 40,
     },
     kButton: {
-        width: '48%',
-        backgroundColor: '#282828',
-        padding: 20,
-        borderRadius: 10,
-        marginBottom: 15,
-        alignItems: 'center',
+        paddingVertical: 8,
+        paddingHorizontal: 15,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: '#1DB954',
     },
     kButtonActive: {
         backgroundColor: '#1DB954',
     },
-    kText: {
+    kButtonText: {
+        color: '#1DB954',
+        fontWeight: 'bold',
+    },
+    kButtonTextActive: {
         color: '#FFFFFF',
-        fontSize: 18,
-        fontWeight: 'bold',
-    },
-    kTextActive: {
-        color: '#000000',
-    },
-    startButton: {
-        backgroundColor: '#1DB954',
-        padding: 20,
-        borderRadius: 30,
-        alignItems: 'center',
-        marginBottom: 20,
-    },
-    startButtonText: {
-        color: '#000000',
-        fontSize: 18,
-        fontWeight: 'bold',
-    },
-    backButton: {
-        alignItems: 'center',
-    },
-    backButtonText: {
-        color: '#B3B3B3',
-        fontSize: 16,
     },
 });
