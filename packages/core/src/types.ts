@@ -80,6 +80,7 @@ export type PairRecommendation = {
 
 export type EngineStatus = {
   topKSet: ItemId[];
+  fullRanking: ItemId[];
   stability: number;
   pInTopK: Map<ItemId, number>;
   contested: ItemId[];

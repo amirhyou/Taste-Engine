@@ -27,13 +27,20 @@ function App() {
   const [status, setStatus] = useState(() => engine.status());
   const [voteCount, setVoteCount] = useState(0);
   const [sliderValue, setSliderValue] = useState(0);
+  const [halfLife, setHalfLife] = useState(30);
+  const [nowOffset, setNowOffset] = useState(0);
 
   // Update engine K when the state changes
   useEffect(() => {
     engine.setK(k);
-    setStatus(engine.status());
+    setStatus(engine.status(Date.now() + nowOffset));
     setNextPair(engine.nextPair());
-  }, [k, engine]);
+  }, [k, engine, nowOffset]);
+
+  useEffect(() => {
+    engine.setDecay({ type: 'exp', halfLifeDays: halfLife });
+    setStatus(engine.status(Date.now() + nowOffset));
+  }, [halfLife, engine, nowOffset]);
 
   const handleVote = useCallback(() => {
     // Map slider -1..1 to 'a' vs 'b' with strength
@@ -41,16 +48,17 @@ function App() {
     const result = sliderValue < 0 ? 'a' : sliderValue > 0 ? 'b' : 'tie';
     const strength = Math.abs(sliderValue);
 
+    const now = Date.now() + nowOffset;
     engine.ingest({
       a: nextPair.a,
       b: nextPair.b,
       result,
       strength,
-      t: Date.now()
+      t: now
     });
 
     setNextPair(engine.nextPair());
-    setStatus(engine.status());
+    setStatus(engine.status(now));
     setVoteCount(v => v + 1);
     setSliderValue(0); // Reset slider
   }, [nextPair, sliderValue, engine]);
@@ -110,6 +118,36 @@ function App() {
               />
               <span className="hint">The engine focuses uncertainty reduction on finding the best {k} items.</span>
             </div>
+
+            <div className="setting-item">
+              <label>Time Decay (Half-life: {halfLife} days)</label>
+              <input
+                type="range"
+                min="0.1"
+                max="365"
+                step="0.1"
+                value={halfLife}
+                onChange={(e) => setHalfLife(parseFloat(e.target.value))}
+                className="setting-slider"
+              />
+              <span className="hint">How fast old votes lose influence. {halfLife < 1 ? 'Aggressive drift detection.' : 'Long-term stability.'}</span>
+            </div>
+
+            <div className="setting-item">
+              <label>Simulation Control</label>
+              <button
+                className="secondary-btn"
+                onClick={() => setNowOffset(prev => prev + 30 * 24 * 3600 * 1000)}
+              >
+                ⏩ Fast Forward 1 Month
+              </button>
+              <button
+                className="text-btn"
+                onClick={() => setNowOffset(0)}
+              >
+                Reset Time
+              </button>
+            </div>
           </section>
         </div>
 
@@ -122,7 +160,7 @@ function App() {
           </div>
 
           <div className="ranking-list">
-            {status.topKSet.map((item, idx) => (
+            {status.fullRanking.map((item, idx) => (
               <div key={item} className={`rank-card ${idx < k ? 'in-top-k' : 'outside-k'}`}>
                 <span className="idx">#{idx + 1}</span>
                 <span className="name">{item}</span>

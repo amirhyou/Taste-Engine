@@ -8,7 +8,7 @@ export type StopDecision = {
 
 export const shouldStop = (rankedItems: ItemId[], pInTopK: Map<ItemId, number>, config: RunConfig): StopDecision => {
   const topK = rankedItems.slice(0, Math.min(config.k, rankedItems.length));
-  const boundary = config.boundaryBand(config.k);
+  const boundary = config.boundaryBand(config.k, rankedItems.length);
   const challengerDepth = Math.max(1, Math.round(boundary * config.confidence.challengerBandMultiplier));
   const challengers = rankedItems.slice(config.k, Math.min(rankedItems.length, config.k + challengerDepth));
 

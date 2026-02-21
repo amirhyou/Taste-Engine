@@ -292,7 +292,8 @@ main {
   color: var(--text-dim);
 }
 
-.setting-item input {
+.setting-item input[type="number"],
+.setting-item input[type="text"] {
   background: var(--bg);
   border: 1px solid #374151;
   color: var(--text);
@@ -300,6 +301,45 @@ main {
   border-radius: 0.5rem;
   font-size: 1rem;
   font-weight: 800;
+}
+
+.setting-slider {
+  width: 100%;
+  height: 6px;
+  background: #374151;
+  border-radius: 3px;
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+  cursor: pointer;
+}
+
+.setting-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  background: var(--accent);
+  border-radius: 50%;
+}
+
+.secondary-btn {
+  background: #374151;
+  color: var(--text);
+  border: none;
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.text-btn {
+  background: transparent;
+  color: var(--text-dim);
+  border: none;
+  padding: 0.5rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  text-decoration: underline;
 }
 
 .setting-item .hint {

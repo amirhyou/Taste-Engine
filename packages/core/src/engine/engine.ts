@@ -8,6 +8,7 @@ import { BoundarySelector, pairKey } from '../selector/selector.js';
 import { shouldStop } from '../stopping/stopping.js';
 import {
   ComparisonEvent,
+  DecayConfig,
   EngineSnapshot,
   EngineStatus,
   ItemId,
@@ -94,7 +95,7 @@ export class Engine {
     });
   }
 
-  status(): EngineStatus {
+  status(now = Date.now()): EngineStatus {
     const ranked = this.rankByMu();
     const confidence = computeConfidence(this.model, ranked, this.config, this.rng);
     const stopDecision = shouldStop(ranked, confidence.pInTopK, this.config);
@@ -102,6 +103,7 @@ export class Engine {
 
     return {
       topKSet: ranked.slice(0, Math.min(this.config.k, ranked.length)),
+      fullRanking: ranked,
       stability: confidence.stability,
       pInTopK: confidence.pInTopK,
       contested: confidence.contested,
@@ -147,6 +149,10 @@ export class Engine {
 
   setQ(q: number): void {
     this.config.q = Math.min(1, Math.max(0.5, q));
+  }
+
+  setDecay(decay: DecayConfig): void {
+    this.config.decay = decay;
   }
 
   seedSchedule(now = Date.now()): PairRecommendation[] {
