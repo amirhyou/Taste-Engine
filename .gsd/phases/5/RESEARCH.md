@@ -20,7 +20,13 @@ researched_at: 2026-02-21
 ### 1. Expo & Core Integration
 **Expo** remains the ideal foundation. The core logic is shared, but the UI will diverge from the web example to fit mobile ergonomics.
 
-### 2. UI: Strength-of-Preference Slider
+### 2. Spotify Auth Flow (PKCE)
+Since mobile apps are "Public Clients," we cannot securely store a Client Secret.
+- **Protocol**: **OAuth 2.0 with PKCE** (Proof Key for Code Exchange). This is mandatory per Spotify's 2025 deprecation of implicit grants.
+- **Library**: **`expo-auth-session`** for the redirect flow and **`expo-secure-store`** for encrypted token storage (Keychain/EncryptedSharedPreferences).
+- **Environment**: Requires **Expo Development Builds** to handle custom URIs; Expo Go is not recommended for production auth flows.
+
+### 3. UI: Strength-of-Preference Slider
 For mobile pairwise voting with "How much do you prefer X?", a high-performance slider is required.
 - **Library**: **`@react-native-community/slider`** (Standard) or a custom **Reanimated-based** component for smoother micro-interactions.
 - **Layout**: **Vertical Stack** (Item A top, Item B bottom) with a horizontal slider in the middle. This is the most ergonomic for thumb-based interaction on modern tall phones.
