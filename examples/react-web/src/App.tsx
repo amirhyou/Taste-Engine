@@ -28,6 +28,7 @@ function App() {
   const [voteCount, setVoteCount] = useState(0);
   const [sliderValue, setSliderValue] = useState(0);
   const [halfLife, setHalfLife] = useState(30);
+  const [driftRate, setDriftRate] = useState(0.05);
   const [nowOffset, setNowOffset] = useState(0);
 
   // Update engine K when the state changes
@@ -39,8 +40,9 @@ function App() {
 
   useEffect(() => {
     engine.setDecay({ type: 'exp', halfLifeDays: halfLife });
+    engine.setDriftRate(driftRate);
     setStatus(engine.status(Date.now() + nowOffset));
-  }, [halfLife, engine, nowOffset]);
+  }, [halfLife, driftRate, engine, nowOffset]);
 
   const handleVote = useCallback(() => {
     // Map slider -1..1 to 'a' vs 'b' with strength
@@ -131,6 +133,20 @@ function App() {
                 className="setting-slider"
               />
               <span className="hint">How fast old votes lose influence. {halfLife < 1 ? 'Aggressive drift detection.' : 'Long-term stability.'}</span>
+            </div>
+
+            <div className="setting-item">
+              <label>Memory Drift (Rate: {driftRate.toFixed(2)} σ/day)</label>
+              <input
+                type="range"
+                min="0"
+                max="2"
+                step="0.01"
+                value={driftRate}
+                onChange={(e) => setDriftRate(parseFloat(e.target.value))}
+                className="setting-slider drift"
+              />
+              <span className="hint">How fast certainty "blurs" over time. {driftRate === 0 ? 'Perfect memory.' : 'Dynamic aging.'}</span>
             </div>
 
             <div className="setting-item">

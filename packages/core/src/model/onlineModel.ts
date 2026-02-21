@@ -18,6 +18,7 @@ export class OnlineModel {
       sigma: DEFAULT_SIGMA,
       games: 0,
       wins: 0,
+      lastUpdatedAt: Date.now(),
       uniqueOpponents: new Set(),
     });
   }
@@ -28,8 +29,8 @@ export class OnlineModel {
 
     if (event.result === 'skip' || event.result === 'tie') return; // Tie support TODO if needed
 
-    const itemA = this.states.get(event.a)!;
-    const itemB = this.states.get(event.b)!; // Copies reference
+    const itemA = this.get(event.a, now);
+    const itemB = this.get(event.b, now);
 
     // Apply time decay weight
     const weight = eventWeight(event, now, this.config.decay);
@@ -86,20 +87,35 @@ export class OnlineModel {
     itemB.games += 1;
     if (event.result === 'a') itemA.wins += 1;
     if (event.result === 'b') itemB.wins += 1;
+    itemA.lastUpdatedAt = now;
+    itemB.lastUpdatedAt = now;
     itemA.uniqueOpponents.add(event.b);
     itemB.uniqueOpponents.add(event.a);
   }
 
-  get(itemId: ItemId): ItemState {
+  get(itemId: ItemId, now = Date.now()): ItemState {
     this.ensureItem(itemId);
-    return this.states.get(itemId)!;
+    const state = this.states.get(itemId)!;
+    this.applyDrift(state, now);
+    return state;
   }
 
-  predict(aId: ItemId, bId: ItemId): number {
-    this.ensureItem(aId);
-    this.ensureItem(bId);
-    const a = this.states.get(aId)!;
-    const b = this.states.get(bId)!;
+  private applyDrift(state: ItemState, now: number): void {
+    if (!this.config.driftRate || this.config.driftRate <= 0) return;
+    const elapsedMs = Math.max(0, now - state.lastUpdatedAt);
+    if (elapsedMs === 0) return;
+
+    const elapsedDays = elapsedMs / (1000 * 60 * 60 * 24);
+    const drift = elapsedDays * this.config.driftRate;
+
+    // Variance growth: sigma^2 = sigma^2 + drift^2
+    state.sigma = Math.sqrt(state.sigma * state.sigma + drift * drift);
+    state.lastUpdatedAt = now;
+  }
+
+  predict(aId: ItemId, bId: ItemId, now = Date.now()): number {
+    const a = this.get(aId, now);
+    const b = this.get(bId, now);
 
     const beta2 = this.config.beta * this.config.beta;
     // Prob(A > B) = cdf((muA - muB) / sqrt(2*beta^2 + sigmaA^2 + sigmaB^2))
@@ -107,10 +123,10 @@ export class OnlineModel {
     return cdf((a.mu - b.mu) / denom);
   }
 
-  sampleScores(itemIds: ItemId[], rng: () => number): Map<ItemId, number> {
+  sampleScores(itemIds: ItemId[], rng: () => number, now = Date.now()): Map<ItemId, number> {
     const sampled = new Map<ItemId, number>();
     for (const itemId of itemIds) {
-      const s = this.get(itemId);
+      const s = this.get(itemId, now);
       const n = boxMuller(rng);
       sampled.set(itemId, s.mu + n * s.sigma);
     }

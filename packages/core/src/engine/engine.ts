@@ -97,7 +97,7 @@ export class Engine {
 
   status(now = Date.now()): EngineStatus {
     const ranked = this.rankByMu();
-    const confidence = computeConfidence(this.model, ranked, this.config, this.rng);
+    const confidence = computeConfidence(this.model, ranked, this.config, this.rng, now);
     const stopDecision = shouldStop(ranked, confidence.pInTopK, this.config);
     const cycles = this.config.cycleGuard.enabled ? this.findCycles(ranked) : [];
 
@@ -155,6 +155,10 @@ export class Engine {
     this.config.decay = decay;
   }
 
+  setDriftRate(rate: number): void {
+    this.config.driftRate = Math.max(0, rate);
+  }
+
   seedSchedule(now = Date.now()): PairRecommendation[] {
     const items = [...this.itemIds];
     const out: PairRecommendation[] = [];
@@ -195,6 +199,7 @@ export class Engine {
         sigma: s.sigma,
         games: s.games,
         wins: s.wins,
+        lastUpdatedAt: s.lastUpdatedAt,
         uniqueOpponents: [...s.uniqueOpponents],
       };
       return acc;
@@ -210,6 +215,7 @@ export class Engine {
           ratioN: 0.1,
           ratioK: 0.2,
         },
+        driftRate: this.config.driftRate,
       },
       items: [...this.itemIds],
       states,
@@ -238,6 +244,7 @@ export class Engine {
           );
           return Math.max(floor, Math.round(snapshot.config.boundaryBand.ratioK * k));
         },
+        driftRate: snapshot.config.driftRate ?? 0.05,
       }),
     );
 

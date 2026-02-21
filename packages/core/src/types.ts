@@ -48,6 +48,7 @@ export type RunConfig = {
   pool: PoolConfig;
   boundaryBand: (k: number, n: number) => number;
   explorationRate: number;
+  driftRate: number;
   repeatCapPerPair: number;
   minComparisonsPerItemSeed: number;
   minUniqueOpponentsInPool: number;
@@ -61,6 +62,7 @@ export type ItemState = {
   sigma: number;
   games: number;
   wins: number;
+  lastUpdatedAt: number;
   uniqueOpponents: Set<ItemId>;
 };
 
@@ -94,9 +96,10 @@ export type EngineSnapshot = {
   config: Omit<RunConfig, 'pool' | 'boundaryBand'> & {
     pool: { startScale: number; startMin: number; tightScale: number; tightMin: number };
     boundaryBand: { floorMin: number; floorMax: number; ratioN: number; ratioK: number };
+    driftRate: number;
   };
   items: ItemId[];
-  states: Record<ItemId, { mu: number; sigma: number; games: number; wins: number; uniqueOpponents: ItemId[] }>;
+  states: Record<ItemId, { mu: number; sigma: number; games: number; wins: number; lastUpdatedAt: number; uniqueOpponents: ItemId[] }>;
   pairCounts: Record<string, number>;
   events: ComparisonEvent[];
 };

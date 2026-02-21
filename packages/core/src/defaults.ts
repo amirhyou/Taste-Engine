@@ -18,6 +18,7 @@ export const defaultRunConfig: RunConfig = {
   },
   boundaryBand: boundaryFn(2, 10, 0.1, 0.2),
   explorationRate: 0.05,
+  driftRate: 0.05,
   repeatCapPerPair: 3,
   minComparisonsPerItemSeed: 2,
   minUniqueOpponentsInPool: 2,

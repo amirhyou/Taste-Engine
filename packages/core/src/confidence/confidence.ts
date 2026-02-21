@@ -13,6 +13,7 @@ export const computeConfidence = (
   rankedItems: ItemId[],
   config: RunConfig,
   rng: Rng,
+  now = Date.now(),
 ): ConfidenceResult => {
   const boundary = config.boundaryBand(config.k, rankedItems.length);
   const challengerDepth = Math.max(boundary * config.confidence.challengerBandMultiplier, boundary);
@@ -20,7 +21,7 @@ export const computeConfidence = (
   const counts = new Map<ItemId, number>(scope.map((id) => [id, 0]));
 
   for (let i = 0; i < config.confidence.samples; i += 1) {
-    const sample = [...model.sampleScores(scope, rng).entries()].sort((a, b) => b[1] - a[1]);
+    const sample = [...model.sampleScores(scope, rng, now).entries()].sort((a, b) => b[1] - a[1]);
     for (const [id] of sample.slice(0, Math.min(config.k, sample.length))) {
       counts.set(id, (counts.get(id) ?? 0) + 1);
     }
