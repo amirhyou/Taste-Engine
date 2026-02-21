@@ -5,10 +5,9 @@ import { SpotifyService } from '../services/spotify';
 import { PairStack } from '../components/PairStack';
 import { StrengthSlider } from '../components/StrengthSlider';
 import { engineManager } from '../services/engineManager';
-import { useEngineStatus } from '../hooks/useEngineStatus';
-
 import ResultScreen from './ResultScreen';
 import PlaylistPicker from './PlaylistPicker';
+import { sessionController } from '../services/sessionController';
 
 export default function VotingScreen() {
     const { token, promptAsync } = useSpotifyAuth();
