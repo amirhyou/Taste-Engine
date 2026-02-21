@@ -5,6 +5,7 @@ const SNAPSHOT_PREFIX = 'engine_snapshot_';
 const METADATA_PREFIX = 'engine_metadata_';
 
 export interface ItemMetadata {
+    id: string;
     name: string;
     artist?: string;
     imageUrl?: string;
@@ -15,7 +16,7 @@ export class EngineManager {
     private currentPlaylistId: string | null = null;
     private metadataCache: Record<string, ItemMetadata> = {};
 
-    async init(playlistId: string, itemIds: string[], metadata?: Record<string, ItemMetadata>): Promise<Engine> {
+    async init(playlistId: string, itemIds: string[], targetK: number = 10, metadata?: Record<string, ItemMetadata>): Promise<Engine> {
         this.currentPlaylistId = playlistId;
         const snapshot = StorageService.getJSON<EngineSnapshot>(`${SNAPSHOT_PREFIX}${playlistId}`);
         const cachedMetadata = StorageService.getJSON<Record<string, ItemMetadata>>(`${METADATA_PREFIX}${playlistId}`);
@@ -26,7 +27,7 @@ export class EngineManager {
             this.engine = new Engine(snapshot);
         } else {
             this.engine = new Engine({
-                k: 10, // Default K, can be tuned via UI
+                k: targetK,
                 items: itemIds,
             });
         }
@@ -40,7 +41,7 @@ export class EngineManager {
     }
 
     getMetadata(itemId: string): ItemMetadata {
-        return this.metadataCache[itemId] || { name: 'Unknown Track' };
+        return this.metadataCache[itemId] || { id: itemId, name: 'Unknown Track' };
     }
 
     getEngine(): Engine {
