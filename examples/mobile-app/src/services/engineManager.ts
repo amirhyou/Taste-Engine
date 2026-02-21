@@ -55,6 +55,10 @@ export class EngineManager {
         StorageService.setJSON(`${SNAPSHOT_PREFIX}${this.currentPlaylistId}`, snapshot);
     }
 
+    hasSession(): boolean {
+        return !!this.currentPlaylistId;
+    }
+
     getCurrentPlaylistId(): string | null {
         return this.currentPlaylistId;
     }

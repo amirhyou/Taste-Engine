@@ -77,11 +77,20 @@ export class SessionController {
             return "Getting a good sense of your taste...";
         }
 
+        if (stats.stability < 20 && engineManager.hasSession()) {
+            return "Slight taste drift detected. Solidifying...";
+        }
+
         return "Ranking tracks...";
     }
 
     getStability(): number {
         return this.engine ? Math.round(this.engine.status().stability) : 0;
+    }
+
+    getContestedItems(): ItemMetadata[] {
+        if (!this.engine) return [];
+        return this.engine.status().contested.map(id => this.getMetadata(id));
     }
 
     canExport(): boolean {
