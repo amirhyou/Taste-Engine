@@ -4,11 +4,25 @@ High-precision identification of Top-K items from noisy human pairwise preferenc
 
 ## Features
 
-- **TrueSkill-inspired**: Uses Gaussian posterior updates to model item skill and uncertainty.
-- **Cycle Guardrails**: Detects and reports preference cycles (A > B > C > A).
-- **Active Selection**: Prioritizes pairs that provide the most information gain.
-- **Scalable**: Handles 5,000+ items with sub-10ms latency.
-- **Zero Dependencies**: Pure TypeScript core.
+-   **TrueSkill-inspired Modeling**: Every item is modeled as a Gaussian distribution ($\mu$, $\sigma$). We don't just track wins; we track *certainty*.
+-   **Active Learning (Active Selection)**: The engine intelligently chooses pairs that are likely to provide the most information gain.
+-   **Confidence-based Stopping**: Uses Monte Carlo simulations to estimate Top-K stability.
+-   **Cycle Guardrails**: Automatically detects and reports circular preferences (e.g., $A > B > C > A$).
+-   **Time Decay**: Support for skills that change over time using configurable half-life or window-based decay.
+-   **Zero Dependencies**: Pure TypeScript core, optimized for performance (N=5000+).
+
+## Configuration (`RunConfig`)
+
+When initializing the `Engine`, you can tune various policy knobs:
+
+| Parameter    | Type          | Default           | Description                                         |
+| :----------- | :------------ | :---------------- | :-------------------------------------------------- |
+| `k`          | `number`      | `10`              | The number of top items you want to identify.       |
+| `q`          | `number`      | `0.9`             | Target confidence/stability threshold (0 to 1).     |
+| `tau`        | `number`      | `0.1`             | "Dynamics" factor; how fast skills drift over time. |
+| `beta`       | `number`      | `4.16`            | Performance noise.                                  |
+| `decay`      | `DecayConfig` | `none`            | Weighting old data.                                 |
+| `cycleGuard` | `object`      | `{enabled: true}` | Enable cycle detection.                             |
 
 ## Quickstart
 
