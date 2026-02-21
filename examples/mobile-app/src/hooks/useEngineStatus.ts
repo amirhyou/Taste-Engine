@@ -26,7 +26,7 @@ export function useEngineStatus() {
     if (stabilityScore > 0) label = "Ranking your tracks...";
     if (stabilityScore > 50) label = "Getting a sense of your taste...";
     if (stabilityScore > 80) label = "Almost there!";
-    if (status?.isComplete) label = "Top 10 Locked In! Ready to export?";
+    if (status?.canStop) label = "Top 10 Locked In! Ready to export?";
 
     return {
         status,

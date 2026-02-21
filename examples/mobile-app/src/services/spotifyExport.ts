@@ -7,8 +7,8 @@ export const SpotifyExportService = {
      */
     exportResults: async (engine: Engine, originalPlaylistId: string, k: number) => {
         const status = engine.status();
-        const topKIds = status.ranking.slice(0, k);
-        const uris = topKIds.map(id => `spotify:track:${id}`);
+        const topKIds = status.fullRanking.slice(0, k);
+        const uris = topKIds.map((id: string) => `spotify:track:${id}`);
 
         // 1. Get current user
         const user = await SpotifyService.getCurrentUser();

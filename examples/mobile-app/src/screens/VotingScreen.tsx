@@ -10,7 +10,11 @@ import { useEngineStatus } from '../hooks/useEngineStatus';
 export default function VotingScreen() {
     const { token, promptAsync } = useSpotifyAuth();
     const [pair, setPair] = React.useState<any>(null);
-    const { stabilityScore, label, refresh } = useEngineStatus();
+    const { stabilityScore, status, refresh } = useEngineStatus();
+
+    let label = status?.reason || 'Loading...';
+    if (stabilityScore > 80) label = 'Almost there!';
+    if (status?.canStop) label = 'Top 10 Locked In! Ready to export?';
 
     React.useEffect(() => {
         if (token) {
@@ -47,7 +51,8 @@ export default function VotingScreen() {
         engine.ingest({
             a: pair.a,
             b: pair.b,
-            winner: isDraw ? null : winnerId,
+            result: isDraw ? 'tie' : (strength < 0 ? 'a' : 'b'),
+            t: Date.now(),
         });
 
         await engineManager.save();

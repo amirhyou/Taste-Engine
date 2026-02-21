@@ -26,6 +26,7 @@ export const StrengthSlider: React.FC<StrengthSliderProps> = ({ onVote, disabled
 
     return (
         <View style={styles.container}>
+            {/* @ts-ignore: Slider typing mismatch in some environments */}
             <Slider
                 style={styles.slider}
                 minimumValue={-1}
