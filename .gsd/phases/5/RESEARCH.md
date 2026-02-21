@@ -24,6 +24,7 @@ researched_at: 2026-02-21
 Since mobile apps are "Public Clients," we cannot securely store a Client Secret.
 - **Protocol**: **OAuth 2.0 with PKCE** (Proof Key for Code Exchange). This is mandatory per Spotify's 2025 deprecation of implicit grants.
 - **Library**: **`expo-auth-session`** for the redirect flow and **`expo-secure-store`** for encrypted token storage (Keychain/EncryptedSharedPreferences).
+- **Session Persistence**: We will store the **Refresh Token** in `SecureStore`. Upon every app launch, we will check for a cached token and perform an automatic refresh to get a fresh Access Token. This ensures the user stays logged in indefinitely unless they manually logout.
 - **Environment**: Requires **Expo Development Builds** to handle custom URIs; Expo Go is not recommended for production auth flows.
 
 ### 3. UI: Strength-of-Preference Slider
