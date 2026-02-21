@@ -1,0 +1,14 @@
+{
+    "$schema": "https://typedoc.org/schema.json",
+    "entryPointStrategy": "packages",
+    "entryPoints": [
+        "packages/*"
+    ],
+    "out": "docs/api",
+    "name": "Taste Engine API",
+    "includeVersion": true,
+    "excludeInternal": true,
+    "plugin": [
+        "typedoc-plugin-markdown"
+    ]
+}

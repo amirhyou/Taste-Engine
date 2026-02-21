@@ -11,6 +11,14 @@
     "build": "npm run -ws build",
     "test": "npm run -ws test",
     "lint": "npm run -ws lint",
-    "typecheck": "npm run -ws typecheck"
+    "typecheck": "npm run -ws typecheck",
+    "docs:generate": "typedoc",
+    "version-packages": "changeset version",
+    "release": "npm run build && changeset publish"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.29.8",
+    "typedoc": "^0.28.17",
+    "typedoc-plugin-markdown": "^4.10.0"
   }
 }

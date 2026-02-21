@@ -8,5 +8,11 @@
     "build": "echo 'No build step'",
     "lint": "echo 'No lint step'",
     "typecheck": "echo 'No typecheck step'"
+  },
+  "dependencies": {
+    "@taste-engine/core": "*"
+  },
+  "devDependencies": {
+    "inquirer": "^9.0.0"
   }
 }
