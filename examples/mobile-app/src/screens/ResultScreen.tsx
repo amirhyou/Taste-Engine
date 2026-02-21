@@ -20,14 +20,14 @@ export default function ResultScreen({ onRestart }: ResultScreenProps) {
         setExporting(true);
         try {
             const engine = engineManager.getEngine();
-            const res = await SpotifyExportService.exportResults(token!, engine);
+            const playlistId = engineManager.getCurrentPlaylistId() || 'default';
+            const k = engine.snapshot().config.k;
+
+            const res = await SpotifyExportService.exportResults(engine, playlistId, k);
             setResult({ success: true, url: res.external_urls.spotify });
 
             // Archive session on completion
-            const playlistId = engineManager.getCurrentPlaylistId();
-            if (playlistId) {
-                sessionManager.archiveSession(playlistId);
-            }
+            sessionManager.archiveSession(playlistId);
         } catch (err) {
             console.error('Export failed', err);
             setResult({ success: false });
