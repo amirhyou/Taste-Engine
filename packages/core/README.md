@@ -8,21 +8,22 @@ High-precision identification of Top-K items from noisy human pairwise preferenc
 -   **Active Learning (Active Selection)**: The engine intelligently chooses pairs that are likely to provide the most information gain.
 -   **Confidence-based Stopping**: Uses Monte Carlo simulations to estimate Top-K stability.
 -   **Cycle Guardrails**: Automatically detects and reports circular preferences (e.g., $A > B > C > A$).
--   **Time Decay**: Support for skills that change over time using configurable half-life or window-based decay.
+-   **Time Dynamics (Decay & Drift)**: Support for weighting recent votes more heavily and natural uncertainty growth during inactivity.
 -   **Zero Dependencies**: Pure TypeScript core, optimized for performance (N=5000+).
 
 ## Configuration (`RunConfig`)
 
 When initializing the `Engine`, you can tune various policy knobs:
 
-| Parameter    | Type          | Default           | Description                                         |
-| :----------- | :------------ | :---------------- | :-------------------------------------------------- |
-| `k`          | `number`      | `10`              | The number of top items you want to identify.       |
-| `q`          | `number`      | `0.9`             | Target confidence/stability threshold (0 to 1).     |
-| `tau`        | `number`      | `0.1`             | "Dynamics" factor; how fast skills drift over time. |
-| `beta`       | `number`      | `4.16`            | Performance noise.                                  |
-| `decay`      | `DecayConfig` | `none`            | Weighting old data.                                 |
-| `cycleGuard` | `object`      | `{enabled: true}` | Enable cycle detection.                             |
+| Parameter    | Type          | Default            | Description                                     |
+| :----------- | :------------ | :----------------- | :---------------------------------------------- |
+| `k`          | `number`      | `10`               | The number of top items you want to identify.   |
+| `q`          | `number`      | `0.9`              | Target confidence/stability threshold (0 to 1). |
+| `tau`        | `number`      | `0.1`              | "Dynamics" factor (match-based noise).          |
+| `beta`       | `number`      | `4.16`             | Performance noise.                              |
+| `decay`      | `DecayConfig` | `{type:'exp',...}` | Weighting old data.                             |
+| `driftRate`  | `number`      | `0.05`             | "Entropy" factor (time-based noise).            |
+| `cycleGuard` | `object`      | `{enabled: true}`  | Enable cycle detection.                         |
 
 ## Quickstart
 

@@ -8,7 +8,7 @@ TypeScript library for **high-precision identification of Top-K items** from noi
 -   **Active Learning (Active Selection)**: The engine doesn't pick pairs randomly. It intelligently chooses pairs that are likely to provide the most information gain based on current uncertainty.
 -   **Confidence-based Stopping**: Uses Monte Carlo simulations to estimate the probability of the current Top-K set being stable. It tells you exactly when you can stop asking for more comparisons.
 -   **Cycle Guardrails**: Automatically detects and reports preference cycles (e.g., $A > B > C > A$) that indicate inconsistent judge behavior or contested items.
--   **Time Decay**: Support for skills that change over time using configurable half-life or window-based decay.
+-   **Time Dynamics (Decay & Drift)**: Keep your rankings alive. Support for weighting recent votes more heavily (Decay) and natural uncertainty growth during inactivity (Drift).
 -   **Deterministic Support**: Predictable results for same history, built with zero external dependencies.
 -   **Built for Scale**: Optimized to handle 5,000+ items entirely in-memory with sub-10ms selection latency.
 
@@ -24,14 +24,15 @@ TypeScript library for **high-precision identification of Top-K items** from noi
 
 When initializing the `Engine`, you can tune various policy knobs:
 
-| Parameter    | Type          | Default           | Description                                                        |
-| :----------- | :------------ | :---------------- | :----------------------------------------------------------------- |
-| `k`          | `number`      | `10`              | The number of top items you want to identify.                      |
-| `q`          | `number`      | `0.9`             | Target confidence/stability threshold (0 to 1).                    |
-| `tau`        | `number`      | `0.1`             | "Dynamics" factor; how fast skills drift over time.                |
-| `beta`       | `number`      | `4.16`            | Performance noise; how much a "lesser" item can beat a better one. |
-| `decay`      | `DecayConfig` | `none`            | Weighting old data (`window`, `exp`, or `none`).                   |
-| `cycleGuard` | `object`      | `{enabled: true}` | Enable detection of circular preferences.                          |
+| Parameter    | Type          | Default                           | Description                                                        |
+| :----------- | :------------ | :-------------------------------- | :----------------------------------------------------------------- |
+| `k`          | `number`      | `10`                              | The number of top items you want to identify.                      |
+| `q`          | `number`      | `0.9`                             | Target confidence/stability threshold (0 to 1).                    |
+| `tau`        | `number`      | `0.1`                             | "Dynamics" factor; how fast skills drift over time.                |
+| `beta`       | `number`      | `4.16`                            | Performance noise; how much a "lesser" item can beat a better one. |
+| `decay`      | `DecayConfig` | `{type: 'exp', halfLifeDays: 30}` | Weighting old data (`window`, `exp`, or `none`).                   |
+| `driftRate`  | `number`      | `0.05`                            | "Entropy" factor; σ growth per day of item inactivity.             |
+| `cycleGuard` | `object`      | `{enabled: true}`                 | Enable detection of circular preferences.                          |
 
 ---
 
@@ -79,6 +80,24 @@ const backup = engine.snapshot();
 const newEngine = new Engine(config);
 newEngine.loadSnapshot(backup);
 ```
+
+---
+
+## Time Dynamics (Making rankings "Alive")
+
+Taste Engine models preferences as a living system. We use two mechanisms to handle time:
+
+### 1. Reactive Decay (Vote Weighting)
+When you cast a new vote, the engine "forgets" old history based on your `decay` config.
+- **Goal**: Ensure a new preference flips the ranking faster.
+- **Example**: If you hated Broccoli in 2020 but love it in 2024, the 2024 vote will have 10x more power than the stale 2020 data.
+
+### 2. Proactive Drift (Memory Entropy)
+Even if you *don't* vote, the engine's confidence in your preferences naturally "relaxes" over time via `driftRate`.
+- **Goal**: Recognize that "No news is bad news." Stale data is less certain than fresh data.
+- **Example**: If you haven't voted in 6 months, the engine's **Stability** score will drop from 95% to 70%. It stays open-minded to change, ready for your next check-in.
+
+---
 
 ## License
 
