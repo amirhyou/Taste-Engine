@@ -1,3 +1,6 @@
+import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { ItemMetadata } from '../services/engineManager';
 
 interface PairStackProps {
