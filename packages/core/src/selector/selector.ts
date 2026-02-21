@@ -19,9 +19,16 @@ export class BoundarySelector {
 
   nextPair(ctx: SelectorContext): PairRecommendation {
     const ranked = [...ctx.pool].sort((a, b) => ctx.model.get(b).mu - ctx.model.get(a).mu);
-    const b = this.config.boundaryBand(ctx.k);
-    const boundaryStart = Math.max(0, ctx.k - b);
-    const boundaryEnd = Math.min(ranked.length - 1, ctx.k + b);
+    const b = this.config.boundaryBand(ctx.k, ctx.itemIds.length);
+    let boundaryStart = Math.max(0, ctx.k - b);
+    let boundaryEnd = Math.min(ranked.length - 1, ctx.k + b);
+
+    // If K is beyond existing items, focus on the bottom of the list
+    if (boundaryStart >= ranked.length) {
+      boundaryStart = Math.max(0, ranked.length - b);
+      boundaryEnd = ranked.length - 1;
+    }
+
     const boundary = ranked.slice(boundaryStart, boundaryEnd + 1);
 
     const inBoundaryOnly = ctx.rng() < 0.7;

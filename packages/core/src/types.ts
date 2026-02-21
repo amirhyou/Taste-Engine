@@ -46,7 +46,7 @@ export type RunConfig = {
   beta: number;
   decay: DecayConfig;
   pool: PoolConfig;
-  boundaryBand: (k: number) => number;
+  boundaryBand: (k: number, n: number) => number;
   explorationRate: number;
   repeatCapPerPair: number;
   minComparisonsPerItemSeed: number;
@@ -92,7 +92,7 @@ export type EngineStatus = {
 export type EngineSnapshot = {
   config: Omit<RunConfig, 'pool' | 'boundaryBand'> & {
     pool: { startScale: number; startMin: number; tightScale: number; tightMin: number };
-    boundaryBand: { floor: number; ratio: number };
+    boundaryBand: { floorMin: number; floorMax: number; ratioN: number; ratioK: number };
   };
   items: ItemId[];
   states: Record<ItemId, { mu: number; sigma: number; games: number; wins: number; uniqueOpponents: ItemId[] }>;

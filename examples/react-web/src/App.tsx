@@ -32,6 +32,7 @@ function App() {
   useEffect(() => {
     engine.setK(k);
     setStatus(engine.status());
+    setNextPair(engine.nextPair());
   }, [k, engine]);
 
   const handleVote = useCallback(() => {

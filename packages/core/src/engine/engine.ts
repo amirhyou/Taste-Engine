@@ -43,7 +43,7 @@ export class Engine {
     if (added.length === 0) return [];
 
     const ranked = this.rankByMu();
-    const boundary = this.config.boundaryBand(this.config.k);
+    const boundary = this.config.boundaryBand(this.config.k, ranked.length);
     const boundaryAnchors = ranked.slice(Math.max(0, this.config.k - boundary), this.config.k + boundary);
     const midStart = Math.max(0, Math.floor(ranked.length / 2) - boundary);
     const midAnchors = ranked.slice(midStart, midStart + Math.max(boundary, 1));
@@ -198,7 +198,12 @@ export class Engine {
       config: {
         ...this.config,
         pool: serializableDefaults.pool,
-        boundaryBand: serializableDefaults.boundaryBand,
+        boundaryBand: {
+          floorMin: 2,
+          floorMax: 10,
+          ratioN: 0.1,
+          ratioK: 0.2,
+        },
       },
       items: [...this.itemIds],
       states,
@@ -220,7 +225,13 @@ export class Engine {
           start: (k) => Math.max(Math.round(snapshot.config.pool.startScale * k), snapshot.config.pool.startMin),
           tight: (k) => Math.max(Math.round(snapshot.config.pool.tightScale * k), snapshot.config.pool.tightMin),
         },
-        boundaryBand: (k) => Math.max(snapshot.config.boundaryBand.floor, Math.round(snapshot.config.boundaryBand.ratio * k)),
+        boundaryBand: (k, n) => {
+          const floor = Math.max(
+            snapshot.config.boundaryBand.floorMin,
+            Math.min(snapshot.config.boundaryBand.floorMax, Math.floor(n * snapshot.config.boundaryBand.ratioN)),
+          );
+          return Math.max(floor, Math.round(snapshot.config.boundaryBand.ratioK * k));
+        },
       }),
     );
 

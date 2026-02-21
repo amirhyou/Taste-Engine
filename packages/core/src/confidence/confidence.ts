@@ -14,7 +14,7 @@ export const computeConfidence = (
   config: RunConfig,
   rng: Rng,
 ): ConfidenceResult => {
-  const boundary = config.boundaryBand(config.k);
+  const boundary = config.boundaryBand(config.k, rankedItems.length);
   const challengerDepth = Math.max(boundary * config.confidence.challengerBandMultiplier, boundary);
   const scope = rankedItems.slice(0, Math.min(rankedItems.length, config.k + challengerDepth));
   const counts = new Map<ItemId, number>(scope.map((id) => [id, 0]));
