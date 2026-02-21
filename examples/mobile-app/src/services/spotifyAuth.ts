@@ -11,7 +11,7 @@ const discovery = {
     tokenEndpoint: 'https://accounts.spotify.com/api/token',
 };
 
-const CLIENT_ID = 'PLACEHOLDER_CLIENT_ID'; // User must provide this
+const CLIENT_ID = '9fe641971da145ada727eb254418e531'; // User provided
 const SCOPES = [
     'user-read-private',
     'user-read-email',
