@@ -12,9 +12,15 @@ export const StrengthSlider: React.FC<StrengthSliderProps> = ({ onVote, disabled
     const [value, setValue] = React.useState(0);
 
     const handleValueChange = (val: number) => {
-        // If crossing the center point (0.0), provide haptic feedback
+        // Multi-stage haptics: 
+        // 1. Center crossing (Medium)
         if ((value < 0 && val >= 0) || (value > 0 && val <= 0)) {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        }
+        // 2. Threshold markers at +/- 0.5 (Light)
+        else if ((value < 0.5 && val >= 0.5) || (value > 0.5 && val <= 0.5) ||
+            (value < -0.5 && val >= -0.5) || (value > -0.5 && val <= -0.5)) {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         }
         setValue(val);
     };

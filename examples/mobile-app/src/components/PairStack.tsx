@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
 import { ItemMetadata } from '../services/engineManager';
 
 interface PairStackProps {
@@ -14,7 +14,8 @@ export const PairStack: React.FC<PairStackProps> = ({ itemA, itemB }) => {
             <Animated.View
                 entering={FadeIn.duration(400)}
                 exiting={FadeOut.duration(400)}
-                key={itemA.id}
+                layout={LinearTransition}
+                key={`a-${itemA.id}`}
                 style={[styles.card, styles.topCard]}
             >
                 <Text style={styles.itemName}>{itemA.name}</Text>
@@ -28,7 +29,8 @@ export const PairStack: React.FC<PairStackProps> = ({ itemA, itemB }) => {
             <Animated.View
                 entering={FadeIn.duration(400)}
                 exiting={FadeOut.duration(400)}
-                key={itemB.id}
+                layout={LinearTransition}
+                key={`b-${itemB.id}`}
                 style={[styles.card, styles.bottomCard]}
             >
                 <Text style={styles.itemName}>{itemB.name}</Text>
