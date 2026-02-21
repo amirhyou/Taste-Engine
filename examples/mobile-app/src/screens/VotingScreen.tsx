@@ -85,8 +85,8 @@ export default function VotingScreen() {
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.label}>{label}</Text>
-                <Text style={styles.stability}>Stability: {stabilityScore}%</Text>
+                <Text style={styles.label}>{message}</Text>
+                <Text style={styles.stability}>Stability: {stability}%</Text>
             </View>
 
             {pair ? (

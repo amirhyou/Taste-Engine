@@ -2,16 +2,17 @@ import { Engine, PairRecommendation } from '@taste-engine/core';
 import { engineManager, ItemMetadata } from './engineManager';
 
 export class SessionController {
-    private engine: Engine;
+    private engine: Engine | null = null;
     private activePair: PairRecommendation | null = null;
     private stagedPair: PairRecommendation | null = null;
 
-    constructor() {
+    init() {
         this.engine = engineManager.getEngine();
         this.refreshPairs();
     }
 
     private refreshPairs() {
+        if (!this.engine) return;
         if (!this.activePair) {
             this.activePair = this.engine.nextPair();
         }
@@ -21,6 +22,7 @@ export class SessionController {
     }
 
     getActivePair(): PairRecommendation | null {
+        if (!this.activePair && this.engine) this.refreshPairs();
         return this.activePair;
     }
 
@@ -33,7 +35,7 @@ export class SessionController {
     }
 
     async ingest(strength: number) {
-        if (!this.activePair) return;
+        if (!this.activePair || !this.engine) return;
 
         const isDraw = Math.abs(strength) < 0.1;
         this.engine.ingest({
@@ -51,7 +53,7 @@ export class SessionController {
         this.activePair = this.stagedPair;
         this.stagedPair = this.engine.nextPair();
 
-        // Safety if engine runs out of pairs (not typical for this model but good practice)
+        // Safety if engine runs out of pairs 
         if (!this.activePair && this.stagedPair) {
             this.activePair = this.stagedPair;
             this.stagedPair = null;
@@ -59,6 +61,7 @@ export class SessionController {
     }
 
     getStatusMessage(): string {
+        if (!this.engine) return "Loading...";
         const stats = this.engine.status();
         const k = this.engine.snapshot().config.k;
 
@@ -78,11 +81,11 @@ export class SessionController {
     }
 
     getStability(): number {
-        return Math.round(this.engine.status().stability);
+        return this.engine ? Math.round(this.engine.status().stability) : 0;
     }
 
     canExport(): boolean {
-        return this.engine.status().canStop;
+        return this.engine ? this.engine.status().canStop : false;
     }
 }
 
