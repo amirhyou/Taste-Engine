@@ -14,25 +14,29 @@
 
 ## Phases
 
-### Phase 1: Private MVP (Mobile)
+### Phase 5: Mobile MVP (Consolidated)
 **Status**: ⬜ Not Started
-**Objective**: Build local-only mobile loop.
+**Objective**: Build a fully functional local-first mobile app experience.
 **Scope**:
-- [ ] Expo/React Native boilerplate.
-- [ ] Slider-based Pairwise Voting UI.
-- [ ] Local Taste Engine instance (Private Sessions).
-- [ ] Snapshot persistence for "resume local session".
+- [ ] Expo/React Native boilerplate with `SecureStore` & `MMKV`.
+- [ ] **Spotify Auth**: PKCE login flow.
+- [ ] **Playlist Picker**: Fetch user playlists from Spotify.
+- [ ] **Pairwise Slider UI**: Top-K (10/20/50/100) selection + strength voting.
+- [ ] **Stability UX**: Messaging ("Almost there") based on engine status.
+- [ ] **Spotify Export**: Create/Update playlist with results.
+- [ ] **Resume State**: Persistence for "continue previous session".
 
-### Phase 2: Private Polish & Spotify
+### Phase 6: Private Polish & UI
 **Status**: ⬜ Not Started
-**Objective**: Integrate Spotify and refine the scoring UX.
+**Objective**: Refine the user experience and add advanced local features.
 **Scope**:
-- [ ] Spotify OAuth & Playlist Fetching.
-- [ ] Stability UX Messaging (80% / 90% logic).
-- [ ] Multi-K Export (10, 20, 50, 100) from 100-item engine.
+- [ ] "Contested Songs" list (Advanced/Conflict view).
+- [ ] Enhanced Micro-animations (Reanimated transitions).
+- [ ] Haptic feedback tuning for slider.
 - [ ] Local mapping storage: `(sourcePlaylistId, k) -> spotifyPlaylistId`.
+- [ ] Drift reminder & inactivity prompts.
 
-### Phase 3: Social Server Core
+### Phase 7: Social Server Core
 **Status**: ⬜ Not Started
 **Objective**: Build the Contest Coordinator and API foundation.
 **Scope**:
@@ -40,7 +44,7 @@
 - [ ] Contest Coordinator: In-memory engine owner for active contests.
 - [ ] BullMQ setup for snapshotting and event log persistence.
 
-### Phase 4: Social Dispatcher & Guardrails
+### Phase 8: Social Dispatcher & Guardrails
 **Status**: ⬜ Not Started
 **Objective**: Implement the high-performance dispatch logic to handle multiple users.
 **Scope**:
@@ -49,7 +53,7 @@
 - [ ] Per-user shadow-ban cooldowns (5 mins).
 - [ ] Persistent "Seen" sets to avoid repeats.
 
-### Phase 5: Discover & Moderation
+### Phase 9: Discover & Moderation
 **Status**: ⬜ Not Started
 **Objective**: Finalize the public-facing features and admin tools.
 **Scope**:
