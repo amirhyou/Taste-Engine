@@ -5,7 +5,7 @@
 > **Goal**: Launch "Tinder-style" Mobile App and a Scalable Multi-User Contest Server.
 
 ## Must-Haves
-- [ ] Mobile App (Expo/React Native) with "Tinder-style" swiping.
+- [ ] Mobile App (Expo/React Native) with "Strength-of-Preference" slider.
 - [ ] Local Engine snapshots per source playlist (Private Mode).
 - [ ] Spotify Auth & Playlist Export (v10, v20, v50, v100 continuity).
 - [ ] Social Contest Coordinator (In-memory engine for active contests).
@@ -19,7 +19,7 @@
 **Objective**: Build local-only mobile loop.
 **Scope**:
 - [ ] Expo/React Native boilerplate.
-- [ ] Tinder-style Swiping UI.
+- [ ] Slider-based Pairwise Voting UI.
 - [ ] Local Taste Engine instance (Private Sessions).
 - [ ] Snapshot persistence for "resume local session".
 

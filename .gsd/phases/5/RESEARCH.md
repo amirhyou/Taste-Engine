@@ -18,32 +18,26 @@ researched_at: 2026-02-21
 ## Findings
 
 ### 1. Expo & Core Integration
-**Expo** is the recommended choice. Since our engine is pure TypeScript and zero-dependency, it will run natively in the JavaScript thread without polyfills.
-- **Recommendation**: Use the default Expo TypeScript template.
-- **Integration**: Link `@taste-engine/core` via workspace dependencies.
+**Expo** remains the ideal foundation. The core logic is shared, but the UI will diverge from the web example to fit mobile ergonomics.
 
-### 2. Swiping UI (Pairwise Voting)
-For a "Tinder-style" loop where the user picks between two items (or swipes for preference):
-- **Option A**: `react-native-deck-swiper` (Mature, feature-rich).
-- **Option B**: `react-native-swipeable-card-stack` (Modern, Reanimated-based).
-- **Recommendation**: Use **`react-native-deck-swiper`** for the MVP as it handles stack management and swipe-back-to-undo out of the box.
+### 2. UI: Strength-of-Preference Slider
+For mobile pairwise voting with "How much do you prefer X?", a high-performance slider is required.
+- **Library**: **`@react-native-community/slider`** (Standard) or a custom **Reanimated-based** component for smoother micro-interactions.
+- **Layout**: **Vertical Stack** (Item A top, Item B bottom) with a horizontal slider in the middle. This is the most ergonomic for thumb-based interaction on modern tall phones.
 
 ### 3. Persistence
-The `EngineSnapshot` can grow to several megabytes for large pools (5,000 items).
-- **Option A**: `AsyncStorage` (Slow, asynchronous, limited).
-- **Option B**: `react-native-mmkv` (Synchronous, ultra-fast C++ implementation).
-- **Recommendation**: **`react-native-mmkv`** is preferred to ensure the "Resume Session" experience is instant and doesn't block the UI.
+- **Recommendation**: **`react-native-mmkv`** for instant persistence of engine snapshots.
 
 ## Decisions Made
-| Decision     | Choice                   | Rationale                                                       |
-| ------------ | ------------------------ | --------------------------------------------------------------- |
-| Runtime      | Expo (SDK 51+)           | Fastest development cycle and robust TS support.                |
-| UI Component | react-native-deck-swiper | High reliability for card-based pairwise comparison.            |
-| Persistence  | react-native-mmkv        | Synchronous read/write is essential for large engine snapshots. |
+| Decision    | Choice            | Rationale                                                   |
+| ----------- | ----------------- | ----------------------------------------------------------- |
+| Runtime     | Expo (SDK 51+)    | Speed and reliability.                                      |
+| UI Strategy | Pairwise Slider   | Direct port of the high-precision logic from web to mobile. |
+| Persistence | react-native-mmkv | Essential for managing state transitions without UI lag.    |
 
 ## Patterns to Follow
-- **Snapshots**: Serialize the engine state to a JSON string and store in MMKV under a unique `contestId` key.
-- **Vibration**: Use `expo-haptics` to provide tactile feedback on every swipe.
+- **Micro-animations**: Use `react-native-reanimated` to pulse the currently "winning" item card as the slider moves.
+- **Vibration**: Provide "notch" feedback as the slider crosses the 0.0 (tie) point using `expo-haptics`.
 
 ## Risks
 - **Large Contexts**: Storing 5,000+ items in a single JSON block might hitting MMKV payload limits if not careful.
