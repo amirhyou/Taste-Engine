@@ -3,8 +3,8 @@ import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
 import { ContestCoordinator } from '../coordinator/ContestCoordinator';
 
-const app = new Hono();
-const coordinator = new ContestCoordinator();
+export const app = new Hono();
+export const coordinator = new ContestCoordinator();
 
 const CreateContestSchema = z.object({
   id: z.string().optional(),
