@@ -1,0 +1,22 @@
+{
+  "name": "examples-social-server",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "hono": "^4.0.0",
+    "@hono/node-server": "^1.0.0",
+    "@hono/zod-validator": "^0.2.0",
+    "zod": "^3.22.0",
+    "bullmq": "^5.0.0",
+    "ioredis": "^5.0.0",
+    "@taste-engine/core": "workspace:packages/core"
+  }
+}

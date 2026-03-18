@@ -33,7 +33,7 @@ describe('Engine', () => {
   });
 
   it('returns onboarding pairs for new items', () => {
-    const engine = new Engine({ k: 2, onboarding: { anchorsPerNewItem: 3, anchorStrategy: 'boundary+mid' } });
+    const engine = new Engine({ onboarding: { anchorsPerNewItem: 3, anchorStrategy: 'boundary+mid' } });
     engine.addItems(['a', 'b', 'c', 'd']);
     const pairs = engine.addItems(['new-1']);
     expect(pairs.length).toBe(3);
