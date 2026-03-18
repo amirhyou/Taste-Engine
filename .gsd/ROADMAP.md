@@ -53,6 +53,13 @@ Phase 5 executed successfully. Initialized Expo Mobile MVP with full Spotify PKC
 - [ ] API: Create Contest, Submit Vote (Instant Next Pair response).
 - [ ] Contest Coordinator: In-memory engine owner for active contests.
 - [ ] BullMQ setup for snapshotting and event log persistence.
+### Phase 7: Social Server Core
+- **Status**: ⚙️ In Progress (prototype implemented)
+- **Objective**: Build the Contest Coordinator and API foundation.
+- **Scope**:
+- [x] API: Create Contest, Submit Vote (Instant Next Pair response).
+- [x] Contest Coordinator: In-memory engine owner for active contests.
+- [x] BullMQ setup for snapshotting and event log persistence.
 
 ### Phase 8: Social Dispatcher & Guardrails
 **Status**: ⬜ Not Started
