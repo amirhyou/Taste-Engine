@@ -1,8 +1,6 @@
 import { Queue, Worker } from 'bullmq';
-import IORedis from 'ioredis';
 import { handleJob } from './VotePersister';
-
-const connection = new IORedis();
+import { redis as connection } from '../redis/client';
 
 export const eventQueue = new Queue('ContestEventsQueue', { connection });
 
