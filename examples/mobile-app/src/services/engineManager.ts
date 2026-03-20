@@ -8,6 +8,7 @@ export interface ItemMetadata {
     id: string;
     name: string;
     artist?: string;
+    album?: string;
     imageUrl?: string;
 }
 
@@ -23,13 +24,17 @@ export class EngineManager {
 
         this.metadataCache = { ...cachedMetadata, ...metadata };
 
-        if (snapshot) {
-            this.engine = new Engine(snapshot);
+        const validSnapshot = snapshot && snapshot.items?.length > 0 && snapshot.items.every((id) => id != null);
+        if (validSnapshot) {
+            this.engine = new Engine();
+            this.engine.loadSnapshot(snapshot!);
         } else {
-            this.engine = new Engine({
-                k: targetK,
-                items: itemIds,
-            });
+            if (snapshot) {
+                // Corrupt snapshot — wipe it
+                StorageService.delete(`${SNAPSHOT_PREFIX}${playlistId}`);
+            }
+            this.engine = new Engine({ k: targetK });
+            this.engine.addItems(itemIds);
         }
 
         // Persist metadata if new info was provided
@@ -41,7 +46,9 @@ export class EngineManager {
     }
 
     getMetadata(itemId: string): ItemMetadata {
-        return this.metadataCache[itemId] || { id: itemId, name: 'Unknown Track' };
+        const found = this.metadataCache[itemId];
+        if (!found) console.warn('[DIAG] metadata miss for id:', itemId, '| cache size:', Object.keys(this.metadataCache).length);
+        return found || { id: itemId, name: 'Unknown Track' };
     }
 
     getEngine(): Engine {

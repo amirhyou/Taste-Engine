@@ -85,7 +85,7 @@ export class SessionController {
     }
 
     getStability(): number {
-        return this.engine ? Math.round(this.engine.status().stability) : 0;
+        return this.engine ? Math.round(this.engine.status().stability * 100) : 0;
     }
 
     getContestedItems(): ItemMetadata[] {

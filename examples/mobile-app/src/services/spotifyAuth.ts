@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { Platform } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri, useAuthRequest, ResponseType } from 'expo-auth-session';
 import { AuthStorage } from './storage';
@@ -29,9 +30,9 @@ export function useSpotifyAuth() {
             clientId: CLIENT_ID,
             scopes: SCOPES,
             usePKCE: true,
-            redirectUri: makeRedirectUri({
-                scheme: 'taste-engine',
-            }),
+            redirectUri: Platform.OS === 'web'
+                ? 'http://127.0.0.1:8081'
+                : makeRedirectUri({ scheme: 'taste-engine' }),
         },
         discovery
     );
@@ -62,13 +63,16 @@ export function useSpotifyAuth() {
                 body: new URLSearchParams({
                     grant_type: 'authorization_code',
                     code,
-                    redirect_uri: makeRedirectUri({ scheme: 'taste-engine' }),
+                    redirect_uri: Platform.OS === 'web'
+                        ? 'http://127.0.0.1:8081'
+                        : makeRedirectUri({ scheme: 'taste-engine' }),
                     client_id: CLIENT_ID,
                     code_verifier: request?.codeVerifier || '',
                 }).toString(),
             });
 
             const data = await response.json();
+            console.log('[spotifyAuth] token exchange response:', JSON.stringify(data));
             if (data.access_token) {
                 await AuthStorage.saveToken('spotify_access_token', data.access_token);
                 if (data.refresh_token) {

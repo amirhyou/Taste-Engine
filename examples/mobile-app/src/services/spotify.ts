@@ -6,18 +6,23 @@ async function fetchWithAuth(path: string, options: RequestInit = {}) {
     const token = await AuthStorage.getToken('spotify_access_token');
     if (!token) throw new Error('No access token');
 
+    const headers: Record<string, string> = {
+        Authorization: `Bearer ${token}`,
+    };
+    // Only set Content-Type for requests with a body (POST/PUT/PATCH)
+    if (options.method && options.method !== 'GET') {
+        headers['Content-Type'] = 'application/json';
+    }
+
     const response = await fetch(`${BASE_URL}${path}`, {
         ...options,
-        headers: {
-            ...options.headers,
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-        },
+        headers: { ...headers, ...(options.headers as Record<string, string>) },
     });
 
-    if (response.status === 401) {
-        // TODO: Implement refresh token logic if 401
-        throw new Error('Unauthorized');
+    if (!response.ok) {
+        const errBody = await response.text();
+        console.error(`[spotify] ${response.status} on ${path}:`, errBody);
+        throw new Error(`Spotify API ${response.status}: ${response.statusText}`);
     }
 
     return response.json();
@@ -29,7 +34,12 @@ export const SpotifyService = {
     },
 
     getPlaylistTracks: async (playlistId: string) => {
-        return fetchWithAuth(`/playlists/${playlistId}/tracks`);
+        return fetchWithAuth(`/playlists/${playlistId}/items?market=from_token&limit=50`);
+    },
+
+    getPlaylistTracksPage: async (nextUrl: string) => {
+        const path = nextUrl.replace('https://api.spotify.com/v1', '');
+        return fetchWithAuth(path);
     },
 
     createPlaylist: async (userId: string, name: string) => {

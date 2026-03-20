@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find 'c:\\\\Users\\\\amiry\\\\The University of Auckland\\\\Antigravity\\\\Taste Engine\\\\Taste-Engine\\\\examples\\\\mobile-app\\\\node_modules\\\\expo\\\\node_modules\\\\@expo\\\\cli\\\\static\\\\shims\\\\react-native-web\\\\dist' -name *.js)",
+      "Bash(find 'c:/Users/amiry/The University of Auckland/Antigravity/Taste Engine/Taste-Engine/examples/mobile-app/node_modules' -name package.json -path */react/package.json)",
+      "Bash(find 'c:/Users/amiry/The University of Auckland/Antigravity/Taste Engine/Taste-Engine/examples/mobile-app/node_modules' -name package.json -path */react-dom/package.json)",
+      "Bash(find 'c:/Users/amiry/The University of Auckland/Antigravity/Taste Engine/Taste-Engine/examples/mobile-app/node_modules/react-native-web' -name package.json -path */react/package.json)",
+      "Bash(find 'c:/Users/amiry/The University of Auckland/Antigravity/Taste Engine/Taste-Engine/examples/mobile-app/node_modules' -maxdepth 3 -name package.json -path */react-native-web/package.json)",
+      "Bash(find 'c:/Users/amiry/The University of Auckland/Antigravity/Taste Engine/Taste-Engine' -name package.json -path */react-native-web/package.json)",
+      "Bash(find 'c:/Users/amiry/The University of Auckland/Antigravity/Taste Engine/Taste-Engine/node_modules/react-native-web' -name package.json -path */react/package.json)",
+      "Bash(find 'c:/Users/amiry/The University of Auckland/Antigravity/Taste Engine/Taste-Engine/examples/mobile-app/node_modules' -name ExpoMetroConfig.js -not -path */canary*)"
+    ]
+  }
+}

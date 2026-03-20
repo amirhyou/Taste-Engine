@@ -18,7 +18,10 @@ export default function PlaylistPicker({ onSelected }: PlaylistPickerProps) {
     React.useEffect(() => {
         if (token) {
             SpotifyService.getPlaylists()
-                .then((data: any) => setPlaylists(data.items || []))
+                .then((data: any) => {
+                    setPlaylists(data.items || []);
+                })
+                .catch((err: any) => console.error('[PlaylistPicker] fetch error:', err))
                 .finally(() => setLoading(false));
         }
     }, [token]);
@@ -26,8 +29,15 @@ export default function PlaylistPicker({ onSelected }: PlaylistPickerProps) {
     const handleSelect = async (playlist: any) => {
         setLoading(true);
         try {
-            const data = await SpotifyService.getPlaylistTracks(playlist.id);
-            const tracks = data.items.map((i: any) => i.track);
+            const tracks: any[] = [];
+            let data = await SpotifyService.getPlaylistTracks(playlist.id);
+            console.log('[DIAG] raw item[0]:', JSON.stringify(data.items?.[0]));
+            (data.items || []).forEach((i: any) => { const t = i.track || i.item; if (t && t.id) tracks.push(t); });
+            while (data.next) {
+                data = await SpotifyService.getPlaylistTracksPage(data.next);
+                (data.items || []).forEach((i: any) => { const t = i.track || i.item; if (t && t.id) tracks.push(t); });
+            }
+            console.log('[DIAG] tracks.length:', tracks.length, ' first id/name:', tracks[0]?.id, tracks[0]?.name);
             const itemIds = tracks.map((t: any) => t.id);
             const metadata: Record<string, ItemMetadata> = {};
             tracks.forEach((t: any) => {
@@ -35,11 +45,14 @@ export default function PlaylistPicker({ onSelected }: PlaylistPickerProps) {
                     id: t.id,
                     name: t.name,
                     artist: t.artists?.[0]?.name,
+                    album: t.album?.name,
                     imageUrl: t.album?.images?.[0]?.url,
                 };
             });
 
+            console.log('[DIAG] metadata keys:', Object.keys(metadata).length, ' sample key:', Object.keys(metadata)[0], ' sample name:', Object.values(metadata)[0]?.name);
             await engineManager.init(playlist.id, itemIds, targetK, metadata);
+            console.log('[DIAG] engine init done. metadataCache size:', Object.keys((engineManager as any).metadataCache).length);
             sessionManager.registerSession(playlist.id, playlist.name, targetK);
             onSelected();
         } catch (err) {
@@ -83,7 +96,7 @@ export default function PlaylistPicker({ onSelected }: PlaylistPickerProps) {
                 renderItem={({ item }) => (
                     <TouchableOpacity style={styles.playlistItem} onPress={() => handleSelect(item)}>
                         <Text style={styles.playlistName}>{item.name}</Text>
-                        <Text style={styles.playlistSongs}>{item.tracks.total} songs</Text>
+                        <Text style={styles.playlistSongs}>{item.items?.total ?? item.tracks?.total ?? '?'} songs</Text>
                     </TouchableOpacity>
                 )}
             />

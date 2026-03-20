@@ -1,12 +1,19 @@
-import { MMKV } from 'react-native-mmkv';
+import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
-/**
- * High-performance synchronous storage for engine snapshots and non-sensitive data.
- */
-export const mmkv = new MMKV({
-    id: 'taste-engine-storage',
-});
+function createStorage() {
+    if (Platform.OS === 'web') {
+        return {
+            getString: (key: string) => localStorage.getItem(key) ?? undefined,
+            set: (key: string, value: string) => localStorage.setItem(key, value),
+            delete: (key: string) => localStorage.removeItem(key),
+        };
+    }
+    const { MMKV } = require('react-native-mmkv');
+    return new MMKV({ id: 'taste-engine-storage' });
+}
+
+const mmkv = createStorage();
 
 export const StorageService = {
     get: (key: string): string | undefined => {
@@ -34,15 +41,28 @@ export const StorageService = {
 
 /**
  * Secure storage for sensitive OAuth tokens.
+ * Falls back to localStorage on web (not truly secure, but functional for dev).
  */
-export const AuthStorage = {
-    saveToken: async (key: string, value: string) => {
-        await SecureStore.setItemAsync(key, value);
-    },
-    getToken: async (key: string) => {
-        return await SecureStore.getItemAsync(key);
-    },
-    deleteToken: async (key: string) => {
-        await SecureStore.deleteItemAsync(key);
-    },
-};
+export const AuthStorage = Platform.OS === 'web'
+    ? {
+          saveToken: async (key: string, value: string) => {
+              localStorage.setItem(key, value);
+          },
+          getToken: async (key: string) => {
+              return localStorage.getItem(key);
+          },
+          deleteToken: async (key: string) => {
+              localStorage.removeItem(key);
+          },
+      }
+    : {
+          saveToken: async (key: string, value: string) => {
+              await SecureStore.setItemAsync(key, value);
+          },
+          getToken: async (key: string) => {
+              return await SecureStore.getItemAsync(key);
+          },
+          deleteToken: async (key: string) => {
+              await SecureStore.deleteItemAsync(key);
+          },
+      };
