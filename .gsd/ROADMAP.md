@@ -62,13 +62,13 @@ Phase 5 executed successfully. Initialized Expo Mobile MVP with full Spotify PKC
 - [x] BullMQ setup for snapshotting and event log persistence.
 
 ### Phase 8: Social Dispatcher & Guardrails
-**Status**: ⬜ Not Started
+**Status**: ✅ Complete
 **Objective**: Implement the high-performance dispatch logic to handle multiple users.
 **Scope**:
-- [ ] Normalized `pairKey` logic.
-- [ ] Global Pair Locks (Redis, 60s TTL).
-- [ ] Per-user shadow-ban cooldowns (5 mins).
-- [ ] Persistent "Seen" sets to avoid repeats.
+- [x] Normalized `pairKey` logic.
+- [x] Global Pair Locks (Redis, 60s TTL).
+- [x] Per-user shadow-ban cooldowns (5 mins).
+- [x] Persistent "Seen" sets to avoid repeats.
 
 ### Phase 9: Discover & Moderation
 **Status**: ⬜ Not Started
