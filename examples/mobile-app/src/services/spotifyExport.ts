@@ -5,22 +5,29 @@ export const SpotifyExportService = {
     /**
      * Exports the top-k results to a new or existing Spotify playlist.
      */
-    exportResults: async (engine: Engine, originalPlaylistId: string, k: number) => {
+    exportResults: async (
+        engine: Engine,
+        originalPlaylistId: string,
+        k: number,
+        originalPlaylistName?: string
+    ) => {
         const status = engine.status();
         const topKIds = status.fullRanking.slice(0, k);
         const uris = topKIds.map((id: string) => `spotify:track:${id}`);
 
-        // 1. Get current user
-        const user = await SpotifyService.getCurrentUser();
+        // 1. Determine target playlist name
+        const baseName = originalPlaylistName || 'Taste Engine';
+        const playlistName = `${baseName}: Top ${k}`;
 
-        // 2. Create the playlist
-        // TODO: In a more advanced version, check for an existing "Taste Engine" playlist for this source to update instead of creating new.
-        const playlistName = `Taste Engine: Top ${k}`;
-        const newPlaylist = await SpotifyService.createPlaylist(user.id, playlistName);
+        // 2. Try to find an existing playlist with that name (first page)
+        const existingList = await SpotifyService.getPlaylists();
+        const existing = existingList.items?.find((p: any) => p.name === playlistName);
 
-        // 3. Add tracks
-        await SpotifyService.updatePlaylistTracks(newPlaylist.id, uris);
+        const target = existing ?? await SpotifyService.createPlaylist('me', playlistName);
 
-        return newPlaylist;
+        // 3. Add tracks (append in order; playlist is usually empty/new)
+        await SpotifyService.updatePlaylistTracks(target.id, uris);
+
+        return target;
     }
 };

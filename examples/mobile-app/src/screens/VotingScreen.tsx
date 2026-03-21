@@ -6,9 +6,11 @@ import { PairStack } from '../components/PairStack';
 import { StrengthSlider } from '../components/StrengthSlider';
 import { engineManager } from '../services/engineManager';
 import { sessionController } from '../services/sessionController';
+import { Screen } from '../components/ui/Screen';
+import { theme } from '../theme';
 
 import ResultScreen from './ResultScreen';
-import PlaylistPicker from './PlaylistPicker';
+import { AppShell } from '../layout/AppShell';
 
 export default function VotingScreen() {
     const { token, promptAsync } = useSpotifyAuth();
@@ -58,14 +60,16 @@ export default function VotingScreen() {
 
     if (!token) {
         return (
-            <View style={styles.centered}>
-                <Button title="Connect Spotify" onPress={() => promptAsync()} />
-            </View>
+            <Screen>
+                <View style={styles.centered}>
+                    <Button title="Connect Spotify" onPress={() => promptAsync()} />
+                </View>
+            </Screen>
         );
     }
 
     if (view === 'picker') {
-        return <PlaylistPicker onSelected={handlePlaylistSelected} />;
+        return <AppShell onSelected={handlePlaylistSelected} />;
     }
 
     if (view === 'results') {
@@ -73,7 +77,7 @@ export default function VotingScreen() {
     }
 
     return (
-        <View style={styles.container}>
+        <Screen>
             <View style={styles.header}>
                 <Text style={styles.label}>{message}</Text>
                 <Text style={styles.stability}>Stability: {stability}%</Text>
@@ -97,15 +101,11 @@ export default function VotingScreen() {
                     <Button title="View Results" onPress={() => setView('results')} />
                 </View>
             )}
-        </View>
+        </Screen>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#121212',
-    },
     footer: {
         flexDirection: 'row',
         justifyContent: 'space-around',
@@ -117,18 +117,18 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     header: {
-        paddingTop: 60,
-        paddingHorizontal: 20,
+        paddingTop: theme.spacing(12),
+        paddingHorizontal: theme.spacing(5),
         alignItems: 'center',
     },
     label: {
-        color: '#FFFFFF',
+        color: theme.colors.textPrimary,
         fontSize: 20,
         fontWeight: '600',
         textAlign: 'center',
     },
     stability: {
-        color: '#1DB954',
+        color: theme.colors.accent,
         fontSize: 14,
         marginTop: 5,
     },

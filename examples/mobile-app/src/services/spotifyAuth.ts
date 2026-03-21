@@ -3,20 +3,15 @@ import { Platform } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri, useAuthRequest, ResponseType } from 'expo-auth-session';
 import { AuthStorage } from './storage';
+import { SPOTIFY_CLIENT_ID, SPOTIFY_DISCOVERY } from './spotifyConfig';
 
 WebBrowser.maybeCompleteAuthSession();
 
-// Endpoint
-const discovery = {
-    authorizationEndpoint: 'https://accounts.spotify.com/authorize',
-    tokenEndpoint: 'https://accounts.spotify.com/api/token',
-};
-
-const CLIENT_ID = '9fe641971da145ada727eb254418e531'; // User provided
 const SCOPES = [
     'user-read-private',
     'user-read-email',
     'playlist-read-private',
+    'playlist-read-collaborative',
     'playlist-modify-public',
     'playlist-modify-private',
 ];
@@ -27,14 +22,18 @@ export function useSpotifyAuth() {
     const [request, response, promptAsync] = useAuthRequest(
         {
             responseType: ResponseType.Code,
-            clientId: CLIENT_ID,
+            clientId: SPOTIFY_CLIENT_ID,
             scopes: SCOPES,
             usePKCE: true,
             redirectUri: Platform.OS === 'web'
                 ? 'http://127.0.0.1:8081'
                 : makeRedirectUri({ scheme: 'taste-engine' }),
+            extraParams: {
+                // Force consent dialog so playlist scopes are explicitly granted when re-connecting.
+                show_dialog: 'true',
+            },
         },
-        discovery
+        SPOTIFY_DISCOVERY
     );
 
     React.useEffect(() => {
@@ -55,7 +54,7 @@ export function useSpotifyAuth() {
         // In a real app, you might need a backend to exchange the code for the client secret if not using pure PKCE
         // Spotify supports pure PKCE without secret for public clients.
         try {
-            const response = await fetch(discovery.tokenEndpoint, {
+            const response = await fetch(SPOTIFY_DISCOVERY.tokenEndpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
@@ -66,7 +65,7 @@ export function useSpotifyAuth() {
                     redirect_uri: Platform.OS === 'web'
                         ? 'http://127.0.0.1:8081'
                         : makeRedirectUri({ scheme: 'taste-engine' }),
-                    client_id: CLIENT_ID,
+                    client_id: SPOTIFY_CLIENT_ID,
                     code_verifier: request?.codeVerifier || '',
                 }).toString(),
             });

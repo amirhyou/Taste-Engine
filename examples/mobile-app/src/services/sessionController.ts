@@ -65,19 +65,19 @@ export class SessionController {
         const stats = this.engine.status();
         const k = this.engine.snapshot().config.k;
 
-        if (stats.canStop) {
-            return `Ready! Your Top ${k} is locked in.`;
+        if (stats.canStop || stats.stability >= 0.9) {
+            return `Stable! Your Top ${k} is ready to export.`;
         }
 
-        if (stats.stability > 80) {
+        if (stats.stability >= 0.8) {
             return "Almost there! Preferences are solidifying.";
         }
 
-        if (stats.stability > 50) {
+        if (stats.stability >= 0.5) {
             return "Getting a good sense of your taste...";
         }
 
-        if (stats.stability < 20 && engineManager.hasSession()) {
+        if (stats.stability < 0.2 && engineManager.hasSession()) {
             return "Slight taste drift detected. Solidifying...";
         }
 

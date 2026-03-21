@@ -10,6 +10,7 @@ export interface ItemMetadata {
     artist?: string;
     album?: string;
     imageUrl?: string;
+    previewUrl?: string;
 }
 
 export class EngineManager {
