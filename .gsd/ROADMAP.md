@@ -47,7 +47,7 @@ Phase 5 executed successfully. Initialized Expo Mobile MVP with full Spotify PKC
 - [x] "Contested Songs" list (Advanced/Conflict view).
 
 ### Phase 7: Social Server Core
-**Status**: ⬜ Not Started
+**Status**: ? Complete
 **Objective**: Build the Contest Coordinator and API foundation.
 **Scope**:
 - [ ] API: Create Contest, Submit Vote (Instant Next Pair response).
@@ -71,10 +71,12 @@ Phase 5 executed successfully. Initialized Expo Mobile MVP with full Spotify PKC
 - [x] Persistent "Seen" sets to avoid repeats.
 
 ### Phase 9: Discover & Moderation
-**Status**: ⬜ Not Started
+**Status**: ? Complete
 **Objective**: Finalize the public-facing features and admin tools.
 **Scope**:
 - [ ] Finalize "Immutable Contest" publish flow.
 - [ ] Public discovery listing & invite links.
 - [ ] Admin "God Controls" (Ban device, Hide/Lock contest).
 - [ ] Abuse controls & Rate limiting.
+
+
