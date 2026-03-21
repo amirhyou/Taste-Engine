@@ -35,3 +35,21 @@ examples/social-server/src/api/routes.ts:86:  return c.json({ status: 'published
 examples/social-server/src/api/routes.ts:96:app.get('/discover', zValidator('query', DiscoverQuerySchema), async (c) => {
 examples/social-server/src/api/routes.ts:105:app.get('/invites/:code', async (c) => {
 ```
+
+Task 9.2.1 verification:
+```
+rg -n "rateLimit\(|bodyLimit|Retry-After|RateLimit-" examples/social-server/src/api
+examples/social-server/src/api\routes.ts:16:import { bodyLimit } from './middleware/bodyLimit';
+examples/social-server/src/api\routes.ts:71:  bodyLimit(),
+examples/social-server/src/api\routes.ts:72:  rateLimit({
+examples/social-server/src/api\routes.ts:94:  bodyLimit(),
+examples/social-server/src/api\routes.ts:96:  rateLimit({
+examples/social-server/src/api\routes.ts:123:  rateLimit({
+examples/social-server/src/api\routes.ts:160:  rateLimit({
+examples/social-server/src/api\middleware\rateLimit.ts:13:export function rateLimit(options: RateLimitOptions): MiddlewareHandler {
+examples/social-server/src/api\middleware\rateLimit.ts:27:    c.header('RateLimit-Limit', String(options.limit));
+examples/social-server/src/api\middleware\rateLimit.ts:28:    c.header('RateLimit-Remaining', String(remaining));
+examples/social-server/src/api\middleware\rateLimit.ts:30:      c.header('RateLimit-Reset', String(ttl));
+examples/social-server/src/api\middleware\rateLimit.ts:35:        c.header('Retry-After', String(ttl));
+examples/social-server/src/api\middleware\bodyLimit.ts:5:export function bodyLimit(maxBytes: number = DEFAULT_MAX_BYTES): MiddlewareHandler {
+```
