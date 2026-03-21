@@ -2,6 +2,7 @@ import * as React from 'react';
 import { Platform } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri, useAuthRequest, ResponseType } from 'expo-auth-session';
+import Constants from 'expo-constants';
 import { AuthStorage } from './storage';
 import { SPOTIFY_CLIENT_ID, SPOTIFY_DISCOVERY } from './spotifyConfig';
 
@@ -18,6 +19,13 @@ const SCOPES = [
 
 export function useSpotifyAuth() {
     const [token, setToken] = React.useState<string | null>(null);
+    const isExpoGo = Constants.appOwnership === 'expo';
+    const useProxy = Platform.OS !== 'web' && isExpoGo;
+    const redirectUri = Platform.OS === 'web'
+        ? 'http://127.0.0.1:8081'
+        : (useProxy
+            ? 'https://auth.expo.io/@amirhyou/tastify'
+            : makeRedirectUri({ scheme: 'taste-engine', path: 'oauth' }));
 
     const [request, response, promptAsync] = useAuthRequest(
         {
@@ -25,9 +33,7 @@ export function useSpotifyAuth() {
             clientId: SPOTIFY_CLIENT_ID,
             scopes: SCOPES,
             usePKCE: true,
-            redirectUri: Platform.OS === 'web'
-                ? 'http://127.0.0.1:8081'
-                : makeRedirectUri({ scheme: 'taste-engine' }),
+            redirectUri,
             extraParams: {
                 // Force consent dialog so playlist scopes are explicitly granted when re-connecting.
                 show_dialog: 'true',
@@ -62,9 +68,7 @@ export function useSpotifyAuth() {
                 body: new URLSearchParams({
                     grant_type: 'authorization_code',
                     code,
-                    redirect_uri: Platform.OS === 'web'
-                        ? 'http://127.0.0.1:8081'
-                        : makeRedirectUri({ scheme: 'taste-engine' }),
+                    redirect_uri: redirectUri,
                     client_id: SPOTIFY_CLIENT_ID,
                     code_verifier: request?.codeVerifier || '',
                 }).toString(),

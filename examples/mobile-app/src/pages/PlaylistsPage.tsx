@@ -13,9 +13,10 @@ interface PlaylistsPageProps {
     token: string | null;
     onSelected: () => void;
     onPreview: (title: string, tracks: ItemMetadata[]) => void;
+    onAuthError: () => void;
 }
 
-export function PlaylistsPage({ token, onSelected, onPreview }: PlaylistsPageProps) {
+export function PlaylistsPage({ token, onSelected, onPreview, onAuthError }: PlaylistsPageProps) {
     const [owned, setOwned] = React.useState<any[]>([]);
     const [shared, setShared] = React.useState<any[]>([]);
     const [engineMade, setEngineMade] = React.useState<any[]>([]);
@@ -23,20 +24,16 @@ export function PlaylistsPage({ token, onSelected, onPreview }: PlaylistsPagePro
     const [targetK, setTargetK] = React.useState(20);
     const [tab, setTab] = React.useState<'owned' | 'shared' | 'engine'>('owned');
     const [sessionInfo, setSessionInfo] = React.useState<Record<string, { stability: number; k: number }>>({});
-    const previewFallbackLimit = 20;
 
-    const fillPreviewFallbacks = async (items: ItemMetadata[], limit: number) => {
-        let filled = 0;
-        for (const item of items) {
-            if (filled >= limit) break;
-            if (item.previewUrl || !item.name) continue;
-            const preview = await SpotifyService.searchTrackPreview(item.name, item.artist);
-            if (preview) {
-                item.previewUrl = preview;
-                filled += 1;
-            }
-        }
-        return filled;
+    const isAuthError = (err: unknown) => {
+        const msg = err instanceof Error ? err.message : String(err || '');
+        const lower = msg.toLowerCase();
+        return (
+            lower.includes('unauthorized') ||
+            lower.includes('no access token') ||
+            lower.includes('expired') ||
+            lower.includes('session')
+        );
     };
 
     React.useEffect(() => {
@@ -79,6 +76,10 @@ export function PlaylistsPage({ token, onSelected, onPreview }: PlaylistsPagePro
                     setSessionInfo(map);
                 } catch (err) {
                     console.error('[PlaylistsPage] fetch error:', err);
+                    if (isAuthError(err)) {
+                        Alert.alert('Spotify disconnected', 'Please reconnect to Spotify.');
+                        onAuthError();
+                    }
                 } finally {
                     setLoading(false);
                 }
@@ -108,19 +109,20 @@ export function PlaylistsPage({ token, onSelected, onPreview }: PlaylistsPagePro
                 imageUrl: t.album?.images?.[0]?.url,
                 previewUrl: t.preview_url,
             }));
-            const basePreviewCount = metaList.filter(t => !!t.previewUrl).length;
-            const filled = await fillPreviewFallbacks(metaList, previewFallbackLimit);
             const metadata: Record<string, ItemMetadata> = {};
             metaList.forEach((item) => {
                 metadata[item.id] = item;
             });
-            console.log('[PlaylistsPage] collected previews:', basePreviewCount, '+', filled, '/', metaList.length);
+            console.log('[PlaylistsPage] collected previews:', metaList.filter(t => !!t.previewUrl).length, '/', metaList.length);
             await engineManager.init(playlist.id, itemIds, targetK, metadata);
             sessionManager.registerSession(playlist.id, playlist.name, targetK);
             onSelected();
         } catch (err) {
             const msg = err instanceof Error ? err.message : 'Failed to load playlist';
             Alert.alert('Cannot load playlist', msg);
+            if (isAuthError(err)) {
+                onAuthError();
+            }
         } finally {
             setLoading(false);
         }
@@ -168,13 +170,14 @@ export function PlaylistsPage({ token, onSelected, onPreview }: PlaylistsPagePro
                 imageUrl: t.album?.images?.[0]?.url,
                 previewUrl: t.preview_url,
             }));
-            const basePreviewCount = meta.filter(t => !!t.previewUrl).length;
-            const filled = await fillPreviewFallbacks(meta, previewFallbackLimit);
-            console.log('[PlaylistsPage] preview meta with previewUrl:', basePreviewCount, '+', filled, '/', meta.length);
+            console.log('[PlaylistsPage] preview meta with previewUrl:', meta.filter(t => !!t.previewUrl).length, '/', meta.length);
             onPreview(playlist.name || 'Playlist', meta);
         } catch (err) {
             const msg = err instanceof Error ? err.message : 'Failed to load playlist';
             Alert.alert('Cannot load playlist', msg);
+            if (isAuthError(err)) {
+                onAuthError();
+            }
         } finally {
             setLoading(false);
         }

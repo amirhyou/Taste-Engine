@@ -66,6 +66,10 @@ export function AppShell({ onSelected }: AppShellProps) {
                         setPreviewTracks(tracks);
                         setPage('preview');
                     }}
+                    onAuthError={() => {
+                        logout();
+                        setPage('spotify');
+                    }}
                 />
             )}
 

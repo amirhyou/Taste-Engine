@@ -9,7 +9,7 @@ Follow these steps to launch the app on your phone or emulator.
 ## 2. Setup
 Navigate to the mobile app directory and ensure dependencies are ready:
 ```bash
-cd examples/mobile-app
+cd examples/tastify
 npm install
 ```
 

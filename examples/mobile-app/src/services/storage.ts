@@ -9,8 +9,18 @@ function createStorage() {
             delete: (key: string) => localStorage.removeItem(key),
         };
     }
-    const { MMKV } = require('react-native-mmkv');
-    return new MMKV({ id: 'taste-engine-storage' });
+    try {
+        const { MMKV } = require('react-native-mmkv');
+        return new MMKV({ id: 'taste-engine-storage' });
+    } catch (err) {
+        console.warn('[storage] MMKV unavailable, falling back to in-memory store. Install a dev build or add AsyncStorage for persistence.', err);
+        const memory = new Map<string, string>();
+        return {
+            getString: (key: string) => memory.get(key),
+            set: (key: string, value: string) => memory.set(key, value),
+            delete: (key: string) => memory.delete(key),
+        };
+    }
 }
 
 const mmkv = createStorage();
