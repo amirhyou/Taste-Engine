@@ -53,3 +53,24 @@ examples/social-server/src/api\middleware\rateLimit.ts:30:      c.header('RateLi
 examples/social-server/src/api\middleware\rateLimit.ts:35:        c.header('Retry-After', String(ttl));
 examples/social-server/src/api\middleware\bodyLimit.ts:5:export function bodyLimit(maxBytes: number = DEFAULT_MAX_BYTES): MiddlewareHandler {
 ```
+
+Task 9.2.2 verification:
+```
+rg -n "admin|jwt|AUTH_JWT_SECRET|ban:device" examples/social-server/src/api examples/social-server/src/redis
+examples/social-server/src/api\routes.ts:7:import { adminApp } from './admin';
+examples/social-server/src/api\routes.ts:185:app.route('/', adminApp);
+examples/social-server/src/redis\moderation.ts:3:const deviceKey = (deviceId: string) => `ban:device:${deviceId}`;
+examples/social-server/src/api\admin.ts:4:import { jwt } from 'hono/jwt';
+examples/social-server/src/api\admin.ts:5:import type { JwtVariables } from 'hono/jwt';
+examples/social-server/src/api\admin.ts:11:const secret = process.env.AUTH_JWT_SECRET;
+examples/social-server/src/api\admin.ts:13:  throw new Error('AUTH_JWT_SECRET is required');
+examples/social-server/src/api\admin.ts:16:const adminApp = new Hono<{ Variables: Variables }>();
+examples/social-server/src/api\admin.ts:18:adminApp.use('/admin/*', jwt({ secret }));
+examples/social-server/src/api\admin.ts:19:adminApp.use('/admin/*', async (c, next) => {
+examples/social-server/src/api\admin.ts:20:  const payload = c.get('jwtPayload');
+examples/social-server/src/api\admin.ts:21:  if (!payload || payload.role !== 'admin') {
+examples/social-server/src/api\admin.ts:27:adminApp.post('/admin/contests/:id/hide', async (c) => {
+examples/social-server/src/api\admin.ts:33:adminApp.post('/admin/contests/:id/lock', async (c) => {
+examples/social-server/src/api\admin.ts:44:adminApp.post('/admin/devices/ban', zValidator('json', BanDeviceSchema), async (c) => {
+examples/social-server/src/api\admin.ts:50:export { adminApp };
+```
