@@ -4,6 +4,7 @@ import { ContestCoordinator } from '../coordinator/ContestCoordinator';
 import { acquireLock, releaseLock } from '../redis/locks';
 import { isOnCooldown, recordVote } from '../redis/cooldown';
 import { hasSeen, markSeen } from '../redis/seen';
+import { getContestMeta } from '../redis/contestMeta';
 import { pairKey } from './pairKey';
 
 export class HttpError extends Error {
@@ -32,10 +33,20 @@ async function sleep(ms: number): Promise<void> {
 export class RedisDispatcher {
   constructor(private readonly coordinator: ContestCoordinator) {}
 
+  private async assertContestStatus(contestId: string): Promise<void> {
+    const meta = await getContestMeta(contestId);
+    if (!meta) throw new HttpError(404, 'Contest not found');
+    if (meta.status === 'hidden') throw new HttpError(404, 'Contest not found');
+    if (meta.status === 'locked' || meta.status === 'published') {
+      throw new HttpError(409, 'Contest locked');
+    }
+  }
+
   async getNextPair(
     contestId: string,
     userId: string,
   ): Promise<PairRecommendation | null> {
+    await this.assertContestStatus(contestId);
     if (await isOnCooldown(userId)) {
       throw new HttpError(429, 'Too many requests');
     }
@@ -60,6 +71,7 @@ export class RedisDispatcher {
     userId: string,
     vote: VotePayload,
   ): Promise<PairRecommendation | null> {
+    await this.assertContestStatus(contestId);
     if (await isOnCooldown(userId)) {
       throw new HttpError(429, 'Too many requests');
     }
