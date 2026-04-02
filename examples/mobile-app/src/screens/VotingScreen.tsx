@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import NetInfo from '@react-native-community/netinfo';
 import { useSpotifyAuth } from '../services/spotifyAuth';
 import { PairStack } from '../components/PairStack';
 import { StrengthSlider } from '../components/StrengthSlider';
@@ -19,6 +20,14 @@ export default function VotingScreen() {
     const [stability, setStability] = React.useState(0);
     const [message, setMessage] = React.useState('Loading...');
     const voteInFlight = React.useRef(false);
+    const [isOffline, setIsOffline] = React.useState(false);
+
+    React.useEffect(() => {
+        const unsub = NetInfo.addEventListener(state => {
+            setIsOffline(!(state.isConnected && state.isInternetReachable));
+        });
+        return () => unsub();
+    }, []);
 
     React.useEffect(() => {
         if (token) {
@@ -87,6 +96,12 @@ export default function VotingScreen() {
                 <Text style={styles.label}>{message}</Text>
                 <Text style={styles.stability}>Stability: {stability}%</Text>
             </View>
+
+            {isOffline && (
+                <View style={styles.offlineBanner}>
+                    <Text style={styles.offlineText}>Offline — votes will sync when reconnected</Text>
+                </View>
+            )}
 
             {pair ? (
                 <>
@@ -158,5 +173,18 @@ const styles = StyleSheet.create({
     },
     footerBtn: {
         flex: 1,
+    },
+    offlineBanner: {
+        backgroundColor: '#FFF3CD',
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 6,
+        marginBottom: 8,
+        marginHorizontal: 20,
+        alignItems: 'center',
+    },
+    offlineText: {
+        color: '#856404',
+        fontSize: 12,
     },
 });

@@ -5,13 +5,32 @@
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "echo 'No tests yet'",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "tsc -p tsconfig.json --noEmit"
   },
+  "dependencies": {
+    "zod": "^3.22.0"
+  },
+  "peerDependencies": {
+    "@hono/zod-validator": "^0.2.2",
+    "hono": "^4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@hono/zod-validator": { "optional": true },
+    "hono": { "optional": true }
+  },
   "devDependencies": {
+    "@hono/zod-validator": "^0.2.2",
+    "hono": "^4.0.0",
     "typescript": "^5.6.3"
   }
 }

@@ -1,5 +1,8 @@
 import React from 'react';
+import NetInfo from '@react-native-community/netinfo';
 import { socialApi, VotePayload, TrackMeta } from '../services/socialApi';
+import { voteQueue } from '../services/voteQueue';
+import { retryWithBackoff } from '../services/retryBackoff';
 
 /** Matches session voting: near-center releases are ties (contests require a side — see vote()). */
 const TIE_BAND = 0.1;
@@ -11,6 +14,7 @@ export function useContestVoting(contestId: string, userId: string | null) {
     const [loading, setLoading] = React.useState(false);
     const [done, setDone] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
+    const [pendingCount, setPendingCount] = React.useState(voteQueue.getPendingCount());
 
     React.useEffect(() => {
         if (!contestId || !userId) {
@@ -43,6 +47,30 @@ export function useContestVoting(contestId: string, userId: string | null) {
         return () => { cancelled = true; };
     }, [contestId, userId]);
 
+    // Drain the persisted vote queue when connectivity is restored
+    React.useEffect(() => {
+        const drainQueue = async () => {
+            const pending = voteQueue.getQueue();
+            for (const item of pending) {
+                try {
+                    await retryWithBackoff(() =>
+                        socialApi.voteInContest(item.contestId, item.payload)
+                    );
+                    voteQueue.remove(item.id);
+                    setPendingCount(voteQueue.getPendingCount());
+                } catch {
+                    voteQueue.incrementRetry(item.id);
+                }
+            }
+        };
+        const unsubscribe = NetInfo.addEventListener(state => {
+            if (state.isConnected && state.isInternetReachable) {
+                drainQueue();
+            }
+        });
+        return () => unsubscribe();
+    }, []);
+
     const vote = async (strength: number) => {
         if (!currentPair || !userId || voteInFlight.current) return;
         if (Math.abs(strength) < TIE_BAND) {
@@ -53,9 +81,13 @@ export function useContestVoting(contestId: string, userId: string | null) {
         voteInFlight.current = true;
         setLoading(true);
         setError(null);
+        const payload: VotePayload = { userId, pair: currentPair, choice };
+        const queueId = voteQueue.enqueue(contestId, payload);
+        setPendingCount(voteQueue.getPendingCount());
         try {
-            const payload: VotePayload = { userId, pair: currentPair, choice };
             const result = await socialApi.voteInContest(contestId, payload);
+            voteQueue.remove(queueId);
+            setPendingCount(voteQueue.getPendingCount());
             if (!result.nextPair) setDone(true);
             else {
                 setCurrentPair([result.nextPair.a, result.nextPair.b]);
@@ -69,5 +101,5 @@ export function useContestVoting(contestId: string, userId: string | null) {
         }
     };
 
-    return { currentPair, pairMeta, loading, done, error, vote };
+    return { currentPair, pairMeta, loading, done, error, vote, pendingCount };
 }
