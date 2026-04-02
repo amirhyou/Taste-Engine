@@ -17,6 +17,10 @@
     "zod": "^3.22.0",
     "bullmq": "^5.0.0",
     "ioredis": "^5.0.0",
+    "pino": "^9.4.0",
     "@taste-engine/core": "file:../../packages/core"
+  },
+  "devDependencies": {
+    "pino-pretty": "^11.2.2"
   }
 }

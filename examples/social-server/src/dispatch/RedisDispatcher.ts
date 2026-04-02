@@ -1,11 +1,15 @@
 import { randomUUID } from 'crypto';
-import type { PairRecommendation } from '@taste-engine/core';
 import { ContestCoordinator } from '../coordinator/ContestCoordinator';
 import { acquireLock, releaseLock } from '../redis/locks';
 import { isOnCooldown, recordVote } from '../redis/cooldown';
 import { hasSeen, markSeen } from '../redis/seen';
 import { getContestMeta } from '../redis/contestMeta';
 import { pairKey } from './pairKey';
+
+type PairRecommendation = {
+  a: string;
+  b: string;
+};
 
 export class HttpError extends Error {
   constructor(

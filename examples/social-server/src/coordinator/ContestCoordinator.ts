@@ -1,9 +1,11 @@
-import { Engine } from "@taste-engine/core";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { Engine } = require('@taste-engine/core') as { Engine: new () => any };
 import { eventQueue } from "../worker/bullmq";
 import { storeContestItems, getContestItems, getEngineSnapshot, listAllContestIds } from "../redis/engineState";
+import { withBindings } from '../observability/logger';
 
 type ContestEntry = {
-  engine: Engine;
+  engine: InstanceType<typeof Engine>;
   lastActive: number;
 };
 
@@ -16,7 +18,7 @@ export class ContestCoordinator {
     this.map.set(id, { engine, lastActive: Date.now() });
     // Persist items so engine can be restored after server restart
     void storeContestItems(id, items).catch((err) => {
-      console.error('Failed to store contest items', id, err);
+      withBindings({ contestId: id }).error({ err }, 'contest.store_items_failed');
     });
     return id;
   }
@@ -43,7 +45,7 @@ export class ContestCoordinator {
       }
     }
     if (restored > 0) {
-      console.log(`[ContestCoordinator] Restored ${restored} contest engine(s) from Redis`);
+      withBindings({ restored }).info('contest.restore_all_completed');
     }
   }
 
@@ -63,9 +65,7 @@ export class ContestCoordinator {
 
     // enqueue persistence job asynchronously (do not await)
     void eventQueue.add('VOTE_EVENT', { contestId: id, event: vote, timestamp: Date.now() }).catch((err) => {
-      // best-effort logging — don't block request path
-      // eslint-disable-next-line no-console
-      console.error('Failed to enqueue VOTE_EVENT', err);
+      withBindings({ contestId: id }).error({ err }, 'contest.enqueue_vote_event_failed');
     });
 
     return next;
@@ -88,8 +88,7 @@ export class ContestCoordinator {
         const snapshot = entry.engine.snapshot();
         await eventQueue.add('SNAPSHOT', { contestId, snapshot, timestamp: Date.now() });
       } catch (err) {
-        // eslint-disable-next-line no-console
-        console.error('Failed to enqueue snapshot for', contestId, err);
+        withBindings({ contestId }).error({ err }, 'contest.enqueue_snapshot_failed');
       }
     }
   }

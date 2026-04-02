@@ -6,6 +6,7 @@ export type RateLimitOptions = {
   limit: number;
   windowSec: number;
   keyFromRequest: (c: Context) => string | undefined;
+  onLimit?: (c: Context, ttlSec?: number) => Response;
 };
 
 const rateKey = (scope: string, id: string) => `rl:${scope}:${id}`;
@@ -33,6 +34,9 @@ export function rateLimit(options: RateLimitOptions): MiddlewareHandler {
     if (count > options.limit) {
       if (ttl >= 0) {
         c.header('Retry-After', String(ttl));
+      }
+      if (options.onLimit) {
+        return options.onLimit(c, ttl >= 0 ? ttl : undefined);
       }
       return c.json({ error: 'Too many requests' }, 429);
     }

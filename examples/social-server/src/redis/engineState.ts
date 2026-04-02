@@ -1,5 +1,6 @@
 import { redis } from './client';
-import type { EngineSnapshot } from '@taste-engine/core';
+
+type EngineSnapshot = Record<string, unknown>;
 
 const itemsKey = (id: string) => `contest:${id}:items`;
 const snapshotKey = (id: string) => `contest:${id}:snapshot`;
