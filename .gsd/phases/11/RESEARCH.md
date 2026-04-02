@@ -77,8 +77,9 @@ Performance/reliability notes:
 - Ensure transport error events are treated as fatal or high-severity operational alerts.
 
 **Sources:**
-- https://getpino.io/#/docs/api?id=child
-- https://getpino.io/#/docs/transports
+- Context7: /pinojs/pino/v10.1.0 (docs/api.md, docs/transports.md)
+- https://github.com/pinojs/pino/blob/v10.1.0/docs/api.md
+- https://github.com/pinojs/pino/blob/v10.1.0/docs/transports.md
 
 **Recommendation:** Standardize on pino child loggers with request-scoped context and dual-output transport (stdout + file) as the baseline observability layer.
 
@@ -99,6 +100,7 @@ Important boundary:
 - process event handlers cover async/background failures outside request lifecycle.
 
 **Sources:**
+- Context7: /websites/hono_dev (App API, middleware guides)
 - https://hono.dev/docs/api/hono
 - https://hono.dev/docs/guides/middleware
 
@@ -125,7 +127,8 @@ Why this design:
 - ioredis supports connection events and status property, allowing clear degraded-state diagnostics.
 
 **Sources:**
-- https://github.com/redis/ioredis#readme (Connection Events, status, reconnect behavior)
+- Context7: /redis/ioredis/v5_4_0
+- https://github.com/redis/ioredis/blob/v5.4.0/README.md (Connection Events, status, retry/reconnect behavior)
 
 **Recommendation:** Implement readiness semantics tied to Redis PING and connection status; avoid always-200 liveness-only checks.
 
@@ -241,8 +244,10 @@ Rationale:
 - Background persistence failures can silently degrade system behavior if not surfaced.
 
 **Sources:**
-- https://docs.bullmq.io/guide/workers
-- https://docs.bullmq.io/guide/retrying-failing-jobs
+- Context7: /taskforcesh/bullmq (workers, retrying-failing-jobs, auto-removal-of-jobs)
+- https://github.com/taskforcesh/bullmq/blob/master/docs/gitbook/guide/workers/README.md
+- https://github.com/taskforcesh/bullmq/blob/master/docs/gitbook/guide/retrying-failing-jobs.md
+- https://github.com/taskforcesh/bullmq/blob/master/docs/gitbook/guide/workers/auto-removal-of-jobs.md
 
 **Recommendation:** Introduce standardized queue defaultJobOptions and explicit worker/queue event instrumentation through structured logging.
 
@@ -287,11 +292,14 @@ Rationale:
 |---------|---------|---------|
 | pino | ^10.1.0 | Structured application logging |
 | pino-pretty | ^13.0.0 (dev) | Local developer-readable logs |
-| bullmq | existing (^5.x in stack) | Existing queue; add reliability options and events usage |
-| ioredis | existing (^5.x in stack) | Existing Redis client used for health and moderation data model |
+| bullmq | ^5.0.0 (repo) | Existing queue; add reliability options and events usage |
+| ioredis | ^5.0.0 (repo) | Existing Redis client used for health and moderation data model |
 
-Note:
-- Context7 documentation retrieval was attempted but blocked by API-key authorization in this environment; official upstream docs were used as fallback for this research pass.
+Context7 validation snapshot:
+- Pino recommendations validated against Context7 /pinojs/pino/v10.1.0.
+- ioredis health/reconnect behavior validated against Context7 /redis/ioredis/v5_4_0.
+- BullMQ retry/error/retention guidance validated against Context7 /taskforcesh/bullmq.
+- Hono middleware/error handling guidance validated against Context7 /websites/hono_dev.
 
 ## Risks
 
