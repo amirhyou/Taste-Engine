@@ -1,6 +1,13 @@
 import { Queue, Worker } from 'bullmq';
 import { handleJob } from './VotePersister';
-import { redis as connection } from '../redis/client';
+
+// BullMQ bundles its own ioredis, so we pass a plain connection config rather
+// than the shared Redis instance to avoid a type mismatch between the two copies.
+const connection = {
+  host: process.env.REDIS_HOST ?? '127.0.0.1',
+  port: Number(process.env.REDIS_PORT ?? 6379),
+  maxRetriesPerRequest: null as unknown as undefined,
+};
 
 export const eventQueue = new Queue('ContestEventsQueue', { connection });
 

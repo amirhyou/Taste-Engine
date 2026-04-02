@@ -1,5 +1,5 @@
-import VotingScreen from '@/src/screens/VotingScreen';
+import { Redirect } from 'expo-router';
 
 export default function IndexScreen() {
-    return <VotingScreen />;
+    return <Redirect href="/(tabs)/sessions" />;
 }

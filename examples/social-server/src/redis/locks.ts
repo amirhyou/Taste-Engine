@@ -15,7 +15,7 @@ export async function acquireLock(
   pk: string,
   ownerId: string,
 ): Promise<boolean> {
-  const result = await redis.set(lockKey(contestId, pk), ownerId, 'NX', 'PX', 60000);
+  const result = await redis.set(lockKey(contestId, pk), ownerId, 'PX', 60000, 'NX');
   return result === 'OK';
 }
 

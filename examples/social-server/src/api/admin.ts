@@ -15,7 +15,7 @@ if (!secret) {
 
 const adminApp = new Hono<{ Variables: Variables }>();
 
-adminApp.use('/admin/*', jwt({ secret }));
+adminApp.use('/admin/*', jwt({ secret, alg: 'HS256' }));
 adminApp.use('/admin/*', async (c, next) => {
   const payload = c.get('jwtPayload');
   if (!payload || payload.role !== 'admin') {

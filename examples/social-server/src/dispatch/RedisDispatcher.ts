@@ -37,7 +37,7 @@ export class RedisDispatcher {
     const meta = await getContestMeta(contestId);
     if (!meta) throw new HttpError(404, 'Contest not found');
     if (meta.status === 'hidden') throw new HttpError(404, 'Contest not found');
-    if (meta.status === 'locked' || meta.status === 'published') {
+    if (meta.status === 'locked') {
       throw new HttpError(409, 'Contest locked');
     }
   }

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Platform } from 'react-native';
+import { Platform, Alert } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri, useAuthRequest, ResponseType } from 'expo-auth-session';
 import Constants from 'expo-constants';
@@ -42,12 +42,63 @@ export function useSpotifyAuth() {
         SPOTIFY_DISCOVERY
     );
 
+    const exchangedCodeRef = React.useRef<string | null>(null);
+
     React.useEffect(() => {
-        if (response?.type === 'success') {
-            const { code } = response.params;
-            handleTokenExchange(code);
+        if (response?.type !== 'success') return;
+        const code = response.params.code;
+        if (!code) return;
+        const verifier = request?.codeVerifier;
+        if (!verifier) {
+            // useAuthRequest may not have populated PKCE yet; retry when `request` updates.
+            return;
         }
-    }, [response]);
+        if (exchangedCodeRef.current === code) return;
+        exchangedCodeRef.current = code;
+
+        void (async () => {
+            try {
+                const tokenResponse = await fetch(SPOTIFY_DISCOVERY.tokenEndpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        grant_type: 'authorization_code',
+                        code,
+                        redirect_uri: redirectUri,
+                        client_id: SPOTIFY_CLIENT_ID,
+                        code_verifier: verifier,
+                    }).toString(),
+                });
+
+                const data = await tokenResponse.json();
+                if (data.access_token) {
+                    await AuthStorage.saveToken('spotify_access_token', data.access_token);
+                    if (data.refresh_token) {
+                        await AuthStorage.saveToken('spotify_refresh_token', data.refresh_token);
+                    }
+                    setToken(data.access_token);
+                    return;
+                }
+                const msg =
+                    typeof data.error_description === 'string'
+                        ? data.error_description
+                        : typeof data.error === 'string'
+                            ? data.error
+                            : !tokenResponse.ok
+                                ? `HTTP ${tokenResponse.status}`
+                                : 'Token exchange failed';
+                Alert.alert('Spotify sign-in failed', msg);
+            } catch (error) {
+                console.error('Error exchanging token:', error);
+                Alert.alert(
+                    'Spotify sign-in failed',
+                    error instanceof Error ? error.message : 'Unknown error',
+                );
+            }
+        })();
+    }, [response, request, redirectUri]);
 
     React.useEffect(() => {
         // Initial load: check for existing token
@@ -55,38 +106,6 @@ export function useSpotifyAuth() {
             if (t) setToken(t);
         });
     }, []);
-
-    const handleTokenExchange = async (code: string) => {
-        // In a real app, you might need a backend to exchange the code for the client secret if not using pure PKCE
-        // Spotify supports pure PKCE without secret for public clients.
-        try {
-            const response = await fetch(SPOTIFY_DISCOVERY.tokenEndpoint, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: new URLSearchParams({
-                    grant_type: 'authorization_code',
-                    code,
-                    redirect_uri: redirectUri,
-                    client_id: SPOTIFY_CLIENT_ID,
-                    code_verifier: request?.codeVerifier || '',
-                }).toString(),
-            });
-
-            const data = await response.json();
-            console.log('[spotifyAuth] token exchange response:', JSON.stringify(data));
-            if (data.access_token) {
-                await AuthStorage.saveToken('spotify_access_token', data.access_token);
-                if (data.refresh_token) {
-                    await AuthStorage.saveToken('spotify_refresh_token', data.refresh_token);
-                }
-                setToken(data.access_token);
-            }
-        } catch (error) {
-            console.error('Error exchanging token:', error);
-        }
-    };
 
     const logout = async () => {
         await AuthStorage.deleteToken('spotify_access_token');

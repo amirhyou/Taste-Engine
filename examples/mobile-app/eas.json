@@ -7,6 +7,13 @@
     "base": {
       "node": "20.19.4"
     },
+    "apk": {
+      "extends": "base",
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      }
+    },
     "development": {
       "extends": "base",
       "developmentClient": true,

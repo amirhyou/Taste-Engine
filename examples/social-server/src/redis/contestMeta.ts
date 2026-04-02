@@ -11,11 +11,13 @@ export type ContestMeta = {
   inviteCode: string;
   title?: string;
   description?: string;
+  creatorDeviceId?: string;
 };
 
 const metaKey = (id: string) => `contest:meta:${id}`;
 const inviteKey = (code: string) => `contest:invite:${code}`;
 const publishedKey = () => 'contest:published';
+const deviceContestsKey = (deviceId: string) => `device:${deviceId}:contests`;
 
 function toOptionalNumber(value: string | undefined): number | undefined {
   if (!value) return undefined;
@@ -32,6 +34,7 @@ export async function createContestMeta(input: {
   id: string;
   title?: string;
   description?: string;
+  creatorDeviceId?: string;
 }): Promise<{ inviteCode: string }> {
   const inviteCode = randomBytes(12).toString('base64url');
   const createdAt = Date.now();
@@ -44,9 +47,14 @@ export async function createContestMeta(input: {
     inviteCode,
     title: input.title ?? '',
     description: input.description ?? '',
+    creatorDeviceId: input.creatorDeviceId ?? '',
   });
 
   await redis.set(inviteKey(inviteCode), input.id);
+
+  if (input.creatorDeviceId) {
+    await redis.sadd(deviceContestsKey(input.creatorDeviceId), input.id);
+  }
 
   return { inviteCode };
 }
@@ -63,6 +71,7 @@ export async function getContestMeta(id: string): Promise<ContestMeta | null> {
     inviteCode: data.inviteCode ?? '',
     title: toOptionalString(data.title),
     description: toOptionalString(data.description),
+    creatorDeviceId: toOptionalString(data.creatorDeviceId),
   };
 }
 
@@ -85,6 +94,11 @@ export async function lockContest(id: string): Promise<void> {
   await redis.zrem(publishedKey(), id);
 }
 
+export async function unpublishContest(id: string): Promise<void> {
+  await redis.hset(metaKey(id), { status: 'draft' });
+  await redis.zrem(publishedKey(), id);
+}
+
 export async function resolveInvite(code: string): Promise<string | null> {
   const contestId = await redis.get(inviteKey(code));
   return contestId ?? null;
@@ -94,4 +108,8 @@ export async function listPublishedContests(limit: number, offset: number): Prom
   const safeLimit = Math.max(0, Math.min(limit, 100));
   const safeOffset = Math.max(0, offset);
   return redis.zrevrange(publishedKey(), safeOffset, safeOffset + safeLimit - 1);
+}
+
+export async function listContestsByDevice(deviceId: string): Promise<string[]> {
+  return redis.smembers(deviceContestsKey(deviceId));
 }

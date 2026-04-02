@@ -1,12 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet, Button } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { useSpotifyAuth } from '../services/spotifyAuth';
-import { SpotifyService } from '../services/spotify';
 import { PairStack } from '../components/PairStack';
 import { StrengthSlider } from '../components/StrengthSlider';
 import { engineManager } from '../services/engineManager';
 import { sessionController } from '../services/sessionController';
 import { Screen } from '../components/ui/Screen';
+import { Button } from '../components/ui/Button';
 import { theme } from '../theme';
 
 import ResultScreen from './ResultScreen';
@@ -18,10 +18,10 @@ export default function VotingScreen() {
     const [pair, setPair] = React.useState<any>(null);
     const [stability, setStability] = React.useState(0);
     const [message, setMessage] = React.useState('Loading...');
+    const voteInFlight = React.useRef(false);
 
     React.useEffect(() => {
         if (token) {
-            // Check if we have an active engine and skip picker
             try {
                 engineManager.getEngine();
                 sessionController.init();
@@ -44,17 +44,20 @@ export default function VotingScreen() {
     };
 
     const handleVote = async (strength: number) => {
-        if (!pair) return;
-
-        await sessionController.ingest(strength);
-
-        const next = sessionController.getActivePair();
-        if (!next) {
-            setView('results');
-        } else {
-            setPair(next);
-            setStability(sessionController.getStability());
-            setMessage(sessionController.getStatusMessage());
+        if (!pair || voteInFlight.current) return;
+        voteInFlight.current = true;
+        try {
+            await sessionController.ingest(strength);
+            const next = sessionController.getActivePair();
+            if (!next) {
+                setView('results');
+            } else {
+                setPair(next);
+                setStability(sessionController.getStability());
+                setMessage(sessionController.getStatusMessage());
+            }
+        } finally {
+            voteInFlight.current = false;
         }
     };
 
@@ -62,7 +65,9 @@ export default function VotingScreen() {
         return (
             <Screen>
                 <View style={styles.centered}>
-                    <Button title="Connect Spotify" onPress={() => promptAsync()} />
+                    <Text style={styles.connectTitle}>Tastify</Text>
+                    <Text style={styles.connectSubtitle}>Rank your music with AI-powered pairwise voting</Text>
+                    <Button label="Connect Spotify" onPress={() => promptAsync()} style={styles.connectBtn} />
                 </View>
             </Screen>
         );
@@ -91,14 +96,15 @@ export default function VotingScreen() {
                     />
                     <StrengthSlider onVote={handleVote} />
                     <View style={styles.footer}>
-                        <Button title="Exit Session" onPress={() => setView('picker')} color="#FF5555" />
-                        <Button title="View Results" onPress={() => setView('results')} color="#1DB954" />
+                        <Button label="Exit" onPress={() => setView('picker')} kind="secondary" style={styles.footerBtn} />
+                        <Button label="View Results" onPress={() => setView('results')} style={styles.footerBtn} />
                     </View>
                 </>
             ) : (
                 <View style={styles.centered}>
                     <Text style={styles.label}>All pairs compared!</Text>
-                    <Button title="View Results" onPress={() => setView('results')} />
+                    <View style={{ height: theme.spacing(4) }} />
+                    <Button label="View Results" onPress={() => setView('results')} />
                 </View>
             )}
         </Screen>
@@ -106,20 +112,32 @@ export default function VotingScreen() {
 }
 
 const styles = StyleSheet.create({
-    footer: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        paddingBottom: 40,
-    },
     centered: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        paddingHorizontal: theme.spacing(8),
+    },
+    connectTitle: {
+        ...theme.typography.title,
+        fontSize: 32,
+        marginBottom: theme.spacing(3),
+    },
+    connectSubtitle: {
+        color: theme.colors.textSecondary,
+        fontSize: 15,
+        textAlign: 'center',
+        marginBottom: theme.spacing(8),
+        lineHeight: 22,
+    },
+    connectBtn: {
+        width: '100%',
     },
     header: {
         paddingTop: theme.spacing(12),
         paddingHorizontal: theme.spacing(5),
         alignItems: 'center',
+        paddingBottom: theme.spacing(2),
     },
     label: {
         color: theme.colors.textPrimary,
@@ -130,6 +148,15 @@ const styles = StyleSheet.create({
     stability: {
         color: theme.colors.accent,
         fontSize: 14,
-        marginTop: 5,
+        marginTop: theme.spacing(1),
+    },
+    footer: {
+        flexDirection: 'row',
+        paddingHorizontal: theme.spacing(5),
+        paddingBottom: theme.spacing(10),
+        gap: theme.spacing(3),
+    },
+    footerBtn: {
+        flex: 1,
     },
 });

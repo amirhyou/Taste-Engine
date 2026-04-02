@@ -1,0 +1,10 @@
+**/node_modules
+**/dist
+**/.git
+**/coverage
+**/*.log
+**/.env
+**/examples/mobile-app
+**/examples/react-web
+**/docs
+**/.gsd*

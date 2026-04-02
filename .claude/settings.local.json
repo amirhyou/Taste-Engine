@@ -8,7 +8,13 @@
       "Bash(find 'c:/Users/amiry/The University of Auckland/Antigravity/Taste Engine/Taste-Engine/examples/mobile-app/node_modules' -maxdepth 3 -name package.json -path */react-native-web/package.json)",
       "Bash(find 'c:/Users/amiry/The University of Auckland/Antigravity/Taste Engine/Taste-Engine' -name package.json -path */react-native-web/package.json)",
       "Bash(find 'c:/Users/amiry/The University of Auckland/Antigravity/Taste Engine/Taste-Engine/node_modules/react-native-web' -name package.json -path */react/package.json)",
-      "Bash(find 'c:/Users/amiry/The University of Auckland/Antigravity/Taste Engine/Taste-Engine/examples/mobile-app/node_modules' -name ExpoMetroConfig.js -not -path */canary*)"
+      "Bash(find 'c:/Users/amiry/The University of Auckland/Antigravity/Taste Engine/Taste-Engine/examples/mobile-app/node_modules' -name ExpoMetroConfig.js -not -path */canary*)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d.get\\(''''version'''',''''''''\\)\\)\")",
+      "Bash(find 'c:/Users/amiry/The University of Auckland/Antigravity/Taste Engine/Taste-Engine/examples/mobile-app/node_modules/expo-router/src' -name *.d.ts -maxdepth 2)",
+      "Bash(find 'c:/Users/amiry/The University of Auckland/Antigravity/Taste Engine/Taste-Engine/examples/mobile-app/node_modules/expo-crypto' -name *.d.ts)",
+      "Bash(node dist/index.js)",
+      "Bash(node --env-file=.env dist/index.js)",
+      "Bash(docker compose:*)"
     ]
   }
 }

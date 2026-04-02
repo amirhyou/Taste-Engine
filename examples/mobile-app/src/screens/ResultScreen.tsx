@@ -1,17 +1,20 @@
 import React from 'react';
-import { View, Text, StyleSheet, Button, ActivityIndicator, Linking, ScrollView, Image } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Linking, ScrollView, Image } from 'react-native';
 import { useSpotifyAuth } from '../services/spotifyAuth';
 import { SpotifyExportService } from '../services/spotifyExport';
 import { engineManager, ItemMetadata } from '../services/engineManager';
 import { sessionManager } from '../services/sessionManager';
 import { sessionController } from '../services/sessionController';
+import { Screen } from '../components/ui/Screen';
+import { Button } from '../components/ui/Button';
+import { theme } from '../theme';
 
 interface ResultScreenProps {
     onRestart: () => void;
 }
 
 export default function ResultScreen({ onRestart }: ResultScreenProps) {
-    const { token, promptAsync, logout } = useSpotifyAuth();
+    const { promptAsync, logout } = useSpotifyAuth();
     const [exporting, setExporting] = React.useState(false);
     const [result, setResult] = React.useState<{ success: boolean; url?: string; message?: string } | null>(null);
     const [topK, setTopK] = React.useState<ItemMetadata[]>([]);
@@ -22,11 +25,9 @@ export default function ResultScreen({ onRestart }: ResultScreenProps) {
             const engine = engineManager.getEngine();
             const k = engine.snapshot().config.k;
             const ranking = engine.status().fullRanking.slice(0, k);
-            const items: ItemMetadata[] = ranking.map(id => sessionController.getMetadata(id));
-            setTopK(items);
+            setTopK(ranking.map(id => sessionController.getMetadata(id)));
         } catch (err) {
             console.warn('[ResultScreen] Unable to load top-k ranking', err);
-            setTopK([]);
         }
     }, []);
 
@@ -37,14 +38,10 @@ export default function ResultScreen({ onRestart }: ResultScreenProps) {
             const playlistId = engineManager.getCurrentPlaylistId() || 'default';
             const k = engine.snapshot().config.k;
             const originalName = sessionManager.getSession(playlistId)?.playlistName;
-
             const res = await SpotifyExportService.exportResults(engine, playlistId, k, originalName);
             setResult({ success: true, url: res.external_urls.spotify });
-
-            // Archive session on completion
             sessionManager.archiveSession(playlistId);
         } catch (err) {
-            console.error('Export failed', err);
             const message = err instanceof Error ? err.message : 'Unknown error';
             setResult({ success: false, message });
         } finally {
@@ -54,192 +51,211 @@ export default function ResultScreen({ onRestart }: ResultScreenProps) {
 
     if (exporting) {
         return (
-            <View style={styles.centered}>
-                <ActivityIndicator size="large" color="#1DB954" />
-                <Text style={styles.text}>Exporting to Spotify...</Text>
-            </View>
+            <Screen>
+                <View style={styles.centered}>
+                    <ActivityIndicator size="large" color={theme.colors.accent} />
+                    <Text style={styles.loadingText}>Exporting to Spotify...</Text>
+                </View>
+            </Screen>
         );
     }
 
     if (result?.success) {
         return (
-            <View style={styles.centered}>
-                <Text style={styles.title}>Success! 🎉</Text>
-                <Text style={styles.text}>Your Top-K playlist has been created.</Text>
-                <View style={{ marginVertical: 20 }}>
-                    <Button title="Open Spotify" onPress={() => Linking.openURL(result.url!)} color="#1DB954" />
+            <Screen>
+                <View style={styles.centered}>
+                    <Text style={styles.successEmoji}>🎉</Text>
+                    <Text style={styles.title}>Playlist Created!</Text>
+                    <Text style={styles.subtitle}>Your Top-K playlist is ready on Spotify.</Text>
+                    <View style={styles.gap} />
+                    <Button label="Open Spotify" onPress={() => Linking.openURL(result.url!)} style={styles.fullWidth} />
+                    <View style={styles.smallGap} />
+                    <Button label="Start New Session" onPress={onRestart} kind="secondary" style={styles.fullWidth} />
                 </View>
-                <Button title="Start New Session" onPress={onRestart} />
-            </View>
+            </Screen>
         );
     }
 
     return (
-        <ScrollView contentContainerStyle={styles.container}>
-            <Text style={styles.title}>Session Complete</Text>
-            <Text style={styles.text}>You have reached a stable ranking.</Text>
+        <Screen>
+            <ScrollView contentContainerStyle={styles.scroll}>
+                <Text style={styles.title}>Session Complete</Text>
+                <Text style={styles.subtitle}>You've reached a stable ranking.</Text>
 
-            {result?.success === false && (
-                <View style={styles.errorBox}>
-                    <Text style={styles.errorTitle}>Export failed</Text>
-                    <Text style={styles.errorText}>{result.message || 'Something went wrong.'}</Text>
-                    <Text style={styles.errorHint}>
-                        Tip: Spotify sometimes returns 403 if playlist-modify-private/public wasn’t granted. Reconnect to force consent.
-                    </Text>
-                    <View style={{ height: 10 }} />
-                    <Button
-                        title="Reconnect Spotify"
-                        onPress={async () => { await logout(); promptAsync(); }}
-                        color="#1DB954"
-                    />
-                </View>
-            )}
+                {result?.success === false && (
+                    <View style={styles.errorBox}>
+                        <Text style={styles.errorTitle}>Export failed</Text>
+                        <Text style={styles.errorText}>{result.message || 'Something went wrong.'}</Text>
+                        <Text style={styles.errorHint}>
+                            Tip: reconnect Spotify to re-consent playlist scopes if you see a 403.
+                        </Text>
+                        <View style={styles.smallGap} />
+                        <Button
+                            label="Reconnect Spotify"
+                            onPress={async () => { await logout(); promptAsync(); }}
+                        />
+                    </View>
+                )}
 
-            {topK.length > 0 && (
-                <View style={styles.listContainer}>
-                    <Text style={styles.subtitle}>Your Top {topK.length}</Text>
-                    <Text style={styles.caption}>Final ranking ready for export.</Text>
-                    {topK.map((item, idx) => (
-                        <View key={item.id} style={styles.itemRow}>
-                            <Text style={styles.rank}>{idx + 1}.</Text>
-                            {item.imageUrl && <Image source={{ uri: item.imageUrl }} style={styles.itemImage} />}
-                            <View>
-                                <Text style={styles.itemName}>{item.name}</Text>
-                                <Text style={styles.artistName}>{item.artist}</Text>
+                {topK.length > 0 && (
+                    <View style={styles.card}>
+                        <Text style={styles.cardTitle}>Your Top {topK.length}</Text>
+                        <Text style={styles.cardCaption}>Final ranking ready for export.</Text>
+                        {topK.map((item, idx) => (
+                            <View key={item.id} style={styles.trackRow}>
+                                <Text style={styles.rank}>{idx + 1}</Text>
+                                {item.imageUrl
+                                    ? <Image source={{ uri: item.imageUrl }} style={styles.trackImage} />
+                                    : <View style={[styles.trackImage, styles.trackImagePlaceholder]} />
+                                }
+                                <View style={styles.trackTexts}>
+                                    <Text style={styles.trackName} numberOfLines={1}>{item.name}</Text>
+                                    <Text style={styles.trackArtist} numberOfLines={1}>{item.artist}</Text>
+                                </View>
                             </View>
-                        </View>
-                    ))}
-                </View>
-            )}
+                        ))}
+                    </View>
+                )}
 
-            {contestedItems.length > 0 && (
-                <View style={styles.contestedContainer}>
-                    <Text style={styles.subtitle}>Contested Songs</Text>
-                    <Text style={styles.caption}>These songs had conflicting votes and are less certain in the ranking.</Text>
-                    {contestedItems.map(item => (
-                        <View key={item.id} style={styles.itemRow}>
-                            {item.imageUrl && <Image source={{ uri: item.imageUrl }} style={styles.itemImage} />}
-                            <View>
-                                <Text style={styles.itemName}>{item.name}</Text>
-                                <Text style={styles.artistName}>{item.artist}</Text>
+                {contestedItems.length > 0 && (
+                    <View style={styles.card}>
+                        <Text style={styles.cardTitle}>Contested</Text>
+                        <Text style={styles.cardCaption}>These had conflicting votes — less certain in ranking.</Text>
+                        {contestedItems.map(item => (
+                            <View key={item.id} style={styles.trackRow}>
+                                {item.imageUrl
+                                    ? <Image source={{ uri: item.imageUrl }} style={styles.trackImage} />
+                                    : <View style={[styles.trackImage, styles.trackImagePlaceholder]} />
+                                }
+                                <View style={styles.trackTexts}>
+                                    <Text style={styles.trackName} numberOfLines={1}>{item.name}</Text>
+                                    <Text style={styles.trackArtist} numberOfLines={1}>{item.artist}</Text>
+                                </View>
                             </View>
-                        </View>
-                    ))}
-                </View>
-            )}
+                        ))}
+                    </View>
+                )}
 
-            <View style={{ marginVertical: 30, width: '100%' }}>
-                <Button title="Export to Spotify" onPress={handleExport} color="#1DB954" />
-                <View style={{ height: 10 }} />
-                <Button title="Go Back" onPress={onRestart} color="#666" />
-            </View>
-        </ScrollView>
+                <View style={styles.actions}>
+                    <Button label="Export to Spotify" onPress={handleExport} style={styles.fullWidth} />
+                    <View style={styles.smallGap} />
+                    <Button label="Go Back" onPress={onRestart} kind="secondary" style={styles.fullWidth} />
+                </View>
+            </ScrollView>
+        </Screen>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        padding: 20,
-        backgroundColor: '#121212',
-        alignItems: 'center',
-        paddingTop: 80,
+    scroll: {
+        padding: theme.spacing(5),
+        paddingTop: theme.spacing(10),
     },
     centered: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#121212',
-        padding: 20,
+        padding: theme.spacing(8),
+    },
+    successEmoji: {
+        fontSize: 52,
+        marginBottom: theme.spacing(4),
     },
     title: {
-        color: '#FFFFFF',
-        fontSize: 28,
-        fontWeight: 'bold',
+        ...theme.typography.title,
         textAlign: 'center',
-        marginBottom: 10,
+        marginBottom: theme.spacing(2),
     },
     subtitle: {
-        color: '#FFFFFF',
-        fontSize: 18,
-        fontWeight: 'bold',
-        marginTop: 20,
-        marginBottom: 5,
-    },
-    text: {
-        color: '#B3B3B3',
-        fontSize: 16,
+        color: theme.colors.textSecondary,
+        fontSize: 15,
         textAlign: 'center',
-        marginBottom: 20,
+        marginBottom: theme.spacing(4),
     },
-    caption: {
-        color: '#B3B3B3',
-        fontSize: 12,
-        marginBottom: 10,
+    loadingText: {
+        color: theme.colors.textSecondary,
+        marginTop: theme.spacing(4),
+        fontSize: 15,
     },
-    contestedContainer: {
-        width: '100%',
-        backgroundColor: '#191414',
-        padding: 15,
-        borderRadius: 10,
-        borderWidth: 1,
-        borderColor: '#333',
-    },
-    listContainer: {
-        width: '100%',
-        backgroundColor: '#191414',
-        padding: 15,
-        borderRadius: 10,
-        borderWidth: 1,
-        borderColor: '#333',
-        marginTop: 10,
-    },
+    gap: { height: theme.spacing(6) },
+    smallGap: { height: theme.spacing(3) },
+    fullWidth: { width: '100%' },
     errorBox: {
-        width: '100%',
-        backgroundColor: '#2a1b1b',
-        borderColor: '#ff6b6b',
+        backgroundColor: '#1e1010',
+        borderColor: theme.colors.danger,
         borderWidth: 1,
-        borderRadius: 8,
-        padding: 14,
+        borderRadius: theme.radius.md,
+        padding: theme.spacing(4),
+        marginBottom: theme.spacing(5),
     },
     errorTitle: {
-        color: '#ff6b6b',
+        color: theme.colors.danger,
         fontWeight: '700',
-        fontSize: 16,
-        marginBottom: 6,
+        fontSize: 15,
+        marginBottom: theme.spacing(2),
     },
     errorText: {
         color: '#ff9f9f',
         fontSize: 14,
+        marginBottom: theme.spacing(2),
     },
     errorHint: {
         color: '#ffcf9f',
         fontSize: 12,
-        marginTop: 6,
+        marginBottom: theme.spacing(3),
     },
-    itemRow: {
+    card: {
+        backgroundColor: theme.colors.surface,
+        borderRadius: theme.radius.lg,
+        borderWidth: 1,
+        borderColor: theme.colors.border,
+        padding: theme.spacing(4),
+        marginBottom: theme.spacing(4),
+    },
+    cardTitle: {
+        ...theme.typography.subtitle,
+        marginBottom: theme.spacing(1),
+    },
+    cardCaption: {
+        color: theme.colors.textMuted,
+        fontSize: 12,
+        marginBottom: theme.spacing(3),
+    },
+    trackRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginVertical: 5,
+        paddingVertical: theme.spacing(2),
+        borderTopWidth: 1,
+        borderTopColor: theme.colors.border,
     },
     rank: {
-        color: '#FFFFFF',
-        width: 24,
+        color: theme.colors.textMuted,
+        fontSize: 13,
         fontWeight: '700',
-        fontSize: 14,
+        width: 24,
     },
-    itemImage: {
+    trackImage: {
         width: 40,
         height: 40,
-        borderRadius: 4,
-        marginRight: 10,
+        borderRadius: theme.radius.sm,
+        marginRight: theme.spacing(3),
     },
-    itemName: {
-        color: '#FFFFFF',
+    trackImagePlaceholder: {
+        backgroundColor: theme.colors.surfaceSubtle,
+    },
+    trackTexts: { flex: 1 },
+    trackName: {
+        color: theme.colors.textPrimary,
         fontSize: 14,
         fontWeight: '600',
     },
-    artistName: {
-        color: '#B3B3B3',
+    trackArtist: {
+        color: theme.colors.textSecondary,
         fontSize: 12,
+        marginTop: 2,
+    },
+    actions: {
+        marginTop: theme.spacing(2),
+        marginBottom: theme.spacing(8),
     },
 });

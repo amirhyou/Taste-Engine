@@ -157,6 +157,12 @@ export const SpotifyService = {
         return fetchWithAuth('/me');
     },
 
+    getTracks: async (ids: string[]): Promise<any[]> => {
+        if (ids.length === 0) return [];
+        const data = await fetchWithAuth(`/tracks?ids=${ids.join(',')}`);
+        return data?.tracks ?? [];
+    },
+
     searchTrackPreview: async (trackName: string, artist?: string): Promise<string | null> => {
         if (!trackName) return null;
         const key = makePreviewKey(trackName, artist);

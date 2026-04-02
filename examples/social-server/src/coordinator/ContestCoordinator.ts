@@ -1,5 +1,6 @@
 import { Engine } from "@taste-engine/core";
 import { eventQueue } from "../worker/bullmq";
+import { storeContestItems, getContestItems, getEngineSnapshot, listAllContestIds } from "../redis/engineState";
 
 type ContestEntry = {
   engine: Engine;
@@ -10,9 +11,40 @@ export class ContestCoordinator {
   private map: Map<string, ContestEntry> = new Map();
 
   createContest(id: string, items: string[]) {
-    const engine = new Engine(items);
+    const engine = new Engine();
+    engine.addItems(items);
     this.map.set(id, { engine, lastActive: Date.now() });
+    // Persist items so engine can be restored after server restart
+    void storeContestItems(id, items).catch((err) => {
+      console.error('Failed to store contest items', id, err);
+    });
     return id;
+  }
+
+  async restoreAll(): Promise<void> {
+    const ids = await listAllContestIds();
+    let restored = 0;
+    for (const id of ids) {
+      if (this.map.has(id)) continue;
+      const snapshot = await getEngineSnapshot(id);
+      if (snapshot) {
+        const engine = new Engine();
+        engine.loadSnapshot(snapshot);
+        this.map.set(id, { engine, lastActive: Date.now() });
+        restored++;
+        continue;
+      }
+      const items = await getContestItems(id);
+      if (items) {
+        const engine = new Engine();
+        engine.addItems(items);
+        this.map.set(id, { engine, lastActive: Date.now() });
+        restored++;
+      }
+    }
+    if (restored > 0) {
+      console.log(`[ContestCoordinator] Restored ${restored} contest engine(s) from Redis`);
+    }
   }
 
   getNextPair(id: string) {
@@ -37,6 +69,13 @@ export class ContestCoordinator {
     });
 
     return next;
+  }
+
+  getRanking(id: string): string[] {
+    const entry = this.map.get(id);
+    if (!entry) return [];
+    const status = entry.engine.status();
+    return status?.fullRanking ?? [];
   }
 
   listActive() {
