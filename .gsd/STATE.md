@@ -1,12 +1,19 @@
 # Project State
 
-> Last updated by /execute 14 on 2026-04-03
+> Last updated by /plan 15 on 2026-04-03
 
 ## Current Position
 - **Milestone**: v1.3 (Core Hardening)
-- **Phase**: 14 (completed)
-- **Task**: All tasks complete
-- **Status**: Verified
+- **Phase**: 15 (Onboarding Robustness & Fairness Knobs)
+- **Status**: Ready for execution
+
+## Last Session Summary
+Created Phase 15 execution plans (2 plans, 2 waves).
+- Plan 15.1: Fix `pickAnchors()` to guarantee `anchorsPerNewItem` results (top-up from `this.itemIds`); wire `strength` into `ingest()` mu deltas (clamped to `[0,2]`).
+- Plan 15.2: Tie update in `ingest()` (symmetric sigma reduction, tieFactor=0.1); wire `minUniqueOpponentsInPool` into `pairScore()` (+0.3 uoBoost); add tests for tie, strength, and verify failing onboarding test passes.
+
+## Next Steps
+1. `/execute 15` — run plans 15.1 then 15.2 in order
 
 ## Last Session Summary
 Phase 14 (Engine Correctness — Determinism & Side-Effect Fixes) completed across 2 plans.
