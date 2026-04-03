@@ -1,22 +1,20 @@
 # Project State
 
-> Last updated by /plan 15 on 2026-04-03
+> Last updated by /execute 15 on 2026-04-03
 
 ## Current Position
 - **Milestone**: v1.3 (Core Hardening)
-- **Phase**: 15 (Onboarding Robustness & Fairness Knobs)
-- **Status**: Ready for execution
+- **Phase**: 16 (Cycle Guard Response)
+- **Status**: Ready for research
 
 ## Last Session Summary
-Created Phase 15 execution plans (2 plans, 2 waves).
-- Plan 15.1: Fix `pickAnchors()` to guarantee `anchorsPerNewItem` results (top-up from `this.itemIds`); wire `strength` into `ingest()` mu deltas (clamped to `[0,2]`).
-- Plan 15.2: Tie update in `ingest()` (symmetric sigma reduction, tieFactor=0.1); wire `minUniqueOpponentsInPool` into `pairScore()` (+0.3 uoBoost); add tests for tie, strength, and verify failing onboarding test passes.
+Phase 15 (Onboarding Robustness & Fairness Knobs) completed across 2 plans (2 waves).
+- **Wave 1**: Fixed `pickAnchors()` with `count` param + top-up loop; wired `strength` into `ingest()` mu deltas (clamped `[0,2]`).
+- **Wave 2**: Tie update in `ingest()` (symmetric sigma reduction, tieFactor=0.1); wired `minUniqueOpponentsInPool` into `pairScore()` (+0.3 uoBoost); added 2 new tests.
+- All 8 tests pass in `engine.test.ts` including previously failing onboarding test.
 
 ## Next Steps
-1. `/execute 15` — run plans 15.1 then 15.2 in order
-
-## Last Session Summary
-Phase 14 (Engine Correctness — Determinism & Side-Effect Fixes) completed across 2 plans.
+1. `/research-phase 16` — Cycle Guard Response
 
 ### Completed Work
 - `packages/core/src/types.ts` — added `seed: number` to `RunConfig`
