@@ -92,4 +92,39 @@ describe('Engine', () => {
     expect(restStatus.fullRanking).toEqual(origStatus.fullRanking);
     expect(restStatus.stability).toBeCloseTo(origStatus.stability, 4);
   });
+
+  it('tie ingest reduces sigma without changing mu', () => {
+    const engine = new Engine({ k: 2 });
+    engine.addItems(['a', 'b']);
+
+    engine.ingest({ a: 'a', b: 'b', result: 'tie', t: Date.now() });
+
+    const snap = engine.snapshot();
+    const stateA = snap.states['a'];
+    const stateB = snap.states['b'];
+    expect(stateA.sigma).toBeLessThan(8.333);
+    expect(stateB.sigma).toBeLessThan(8.333);
+    expect(stateA.mu).toBeCloseTo(25, 3);
+    expect(stateB.mu).toBeCloseTo(25, 3);
+  });
+
+  it('strength scales mu delta proportionally', () => {
+    const makeEngine = () => {
+      const e = new Engine({ k: 2, seed: 7 });
+      e.addItems(['a', 'b', 'c']);
+      return e;
+    };
+
+    const e1 = makeEngine();
+    e1.ingest({ a: 'a', b: 'b', result: 'a', t: 1, strength: 0.2 });
+    const snap1 = e1.snapshot();
+
+    const e2 = makeEngine();
+    e2.ingest({ a: 'a', b: 'b', result: 'a', t: 1, strength: 1.0 });
+    const snap2 = e2.snapshot();
+
+    const deltaA1 = snap1.states['a'].mu - 25;
+    const deltaA2 = snap2.states['a'].mu - 25;
+    expect(deltaA2).toBeGreaterThan(deltaA1);
+  });
 });

@@ -52,7 +52,7 @@ export class Engine {
 
     const onboardingPairs: PairRecommendation[] = [];
     for (const newItem of added) {
-      const anchors = this.pickAnchors(boundaryAnchors, midAnchors, newItem);
+      const anchors = this.pickAnchors(boundaryAnchors, midAnchors, newItem, this.config.onboarding.anchorsPerNewItem);
       for (const anchor of anchors.slice(0, this.config.onboarding.anchorsPerNewItem)) {
         onboardingPairs.push({
           a: newItem,
@@ -293,10 +293,22 @@ export class Engine {
     return ranked.slice(0, Math.min(n, Math.max(size, this.config.k + 1)));
   }
 
-  private pickAnchors(boundaryAnchors: ItemId[], midAnchors: ItemId[], excluded: ItemId): ItemId[] {
-    const pool = this.config.onboarding.anchorStrategy === 'midOnly' ? midAnchors : [...boundaryAnchors, ...midAnchors];
-    const unique = [...new Set(pool)].filter((id) => id !== excluded);
-    return unique.length > 0 ? unique : [...this.itemIds].filter((id) => id !== excluded).slice(0, 1);
+  private pickAnchors(boundaryAnchors: ItemId[], midAnchors: ItemId[], excluded: ItemId, count: number): ItemId[] {
+    const preferred = this.config.onboarding.anchorStrategy === 'midOnly'
+      ? midAnchors
+      : [...boundaryAnchors, ...midAnchors];
+    const seen = new Set<ItemId>([excluded]);
+    const result: ItemId[] = [];
+    for (const id of preferred) {
+      if (!seen.has(id)) { seen.add(id); result.push(id); }
+    }
+    if (result.length < count) {
+      for (const id of this.itemIds) {
+        if (result.length >= count) break;
+        if (!seen.has(id)) { seen.add(id); result.push(id); }
+      }
+    }
+    return result;
   }
 }
 

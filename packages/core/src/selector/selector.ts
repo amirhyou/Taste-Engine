@@ -62,7 +62,7 @@ export class BoundarySelector {
     }
 
     const bestB = candidateB
-      .map((id) => ({ id, score: pairScore(a, id, ranked, ctx.model, ctx.pairCounts, ctx.k, b) }))
+      .map((id) => ({ id, score: pairScore(a, id, ranked, ctx.model, ctx.pairCounts, ctx.k, b, this.config.minUniqueOpponentsInPool) }))
       .sort((x, y) => y.score - x.score)[0].id;
 
     return buildMeta(a, bestB, ranked, ctx.model, ctx.pairCounts, ctx.k);
@@ -90,6 +90,7 @@ const pairScore = (
   pairCounts: Map<string, number>,
   k: number,
   boundaryBand: number,
+  minUniqueOpponents: number,
 ): number => {
   const p = model.predict(a, b);
   const uncertainMatch = p * (1 - p);
@@ -105,7 +106,10 @@ const pairScore = (
     Math.abs(bRank - k) <= boundaryBand;
 
   const coverage = 1 / Math.max(1, model.get(a).games + model.get(b).games);
-  return (boundaryCross ? 1.2 : 0) + uncertainMatch * 2 + sigma * 0.03 + coverage - repeatPenalty;
+  const aUO = model.get(a).uniqueOpponents.size;
+  const bUO = model.get(b).uniqueOpponents.size;
+  const uoBoost = (aUO < minUniqueOpponents || bUO < minUniqueOpponents) ? 0.3 : 0;
+  return (boundaryCross ? 1.2 : 0) + uncertainMatch * 2 + sigma * 0.03 + coverage + uoBoost - repeatPenalty;
 };
 
 const buildMeta = (

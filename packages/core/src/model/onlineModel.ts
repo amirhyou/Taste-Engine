@@ -31,7 +31,32 @@ export class OnlineModel {
     this.ensureItem(event.a);
     this.ensureItem(event.b);
 
-    if (event.result === 'skip' || event.result === 'tie') return; // Tie support TODO if needed
+    if (event.result === 'skip') return;
+    if (event.result === 'tie') {
+      const itemA = this.get(event.a, now);
+      const itemB = this.get(event.b, now);
+      const tau2 = this.config.tau * this.config.tau;
+      itemA.sigma = Math.sqrt(itemA.sigma * itemA.sigma + tau2);
+      itemB.sigma = Math.sqrt(itemB.sigma * itemB.sigma + tau2);
+      const beta2 = this.config.beta * this.config.beta;
+      const c = Math.sqrt(2 * beta2 + itemA.sigma * itemA.sigma + itemB.sigma * itemB.sigma);
+      const diff = itemA.mu - itemB.mu;
+      const t = diff / c;
+      const v = pdf(t) / cdf(t);
+      const w = v * (v + t);
+      const tieFactor = 0.1;
+      const varA = itemA.sigma * itemA.sigma;
+      const varB = itemB.sigma * itemB.sigma;
+      itemA.sigma = Math.sqrt(Math.max(MIN_SIGMA, varA * (1 - (varA / (c * c)) * w * tieFactor)));
+      itemB.sigma = Math.sqrt(Math.max(MIN_SIGMA, varB * (1 - (varB / (c * c)) * w * tieFactor)));
+      itemA.games += 1;
+      itemB.games += 1;
+      itemA.lastUpdatedAt = now;
+      itemB.lastUpdatedAt = now;
+      itemA.uniqueOpponents.add(event.b);
+      itemB.uniqueOpponents.add(event.a);
+      return;
+    }
 
     const itemA = this.get(event.a, now);
     const itemB = this.get(event.b, now);
@@ -72,8 +97,9 @@ export class OnlineModel {
     const loserSigmaDelta = (loser.sigma * loser.sigma / (c * c)) * w;
 
     // Apply updates weighted by time decay
-    winner.mu += winnerMeanDelta * weight;
-    loser.mu -= loserMeanDelta * weight;
+    const strength = Math.max(0, Math.min(2, event.strength ?? 1.0));
+    winner.mu += winnerMeanDelta * weight * strength;
+    loser.mu -= loserMeanDelta * weight * strength;
 
     // Update variance
     // new_sigma^2 = old_sigma^2 * (1 - coeff * w)
