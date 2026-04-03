@@ -44,7 +44,7 @@
 ---
 
 ### Phase 15: Onboarding Robustness & Fairness Knobs
-**Status**: ⬜ Not Started
+**Status**: ✅ Complete
 **Objective**: Fix onboarding to reliably return the requested number of anchor pairs and wire in the unused fairness config.
 **Depends on**: Phase 14
 **Scope**:
@@ -66,11 +66,11 @@
 **Objective**: Upgrade the cycle guard from detect-only to detect-and-respond, matching the plan's guardrail behavior.
 **Depends on**: Phase 14
 **Scope**:
-- [ ] Add a `cycleResponseQueue: PairRecommendation[]` buffer on the engine; when `findCycles()` returns non-empty SCCs, populate the buffer with additional within-cluster pairs (sorted by lowest current pair count).
-- [ ] In `nextPair()`, drain the cycle response queue first before running normal selector logic.
-- [ ] Wire `alarmThreshold`: only trigger response when at least one detected SCC contains an item whose `pInTopK` is within the threshold of the k boundary (i.e., contested cycles, not noise from far-outside-pool items).
-- [ ] Add `cycleResponseDepth` to `CycleGuardConfig` (default 4) controlling how many extra pairs to queue per cycle response.
-- [ ] Add test: A>B>C>A cycle near boundary → `nextPair()` returns within-cluster pairs before returning to normal selection.
+- [x] Add a `cycleResponseQueue: PairRecommendation[]` buffer on the engine; when `findCycles()` returns non-empty SCCs, populate the buffer with additional within-cluster pairs (sorted by lowest current pair count).
+- [x] In `nextPair()`, drain the cycle response queue first before running normal selector logic.
+- [x] Wire `alarmThreshold`: only trigger response when at least one detected SCC contains an item whose `pInTopK` is within the threshold of the k boundary (i.e., contested cycles, not noise from far-outside-pool items).
+- [x] Add `cycleResponseDepth` to `CycleGuardConfig` (default 4) controlling how many extra pairs to queue per cycle response.
+- [x] Add test: A>B>C>A cycle near boundary → `nextPair()` returns within-cluster pairs before returning to normal selection.
 
 **Verification**:
 - Cycle detected near boundary → next 4 pairs are cluster-internal.
