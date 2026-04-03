@@ -2,6 +2,9 @@ import { getDeviceId } from './deviceId';
 import { NextPairResultSchema } from '../schemas';
 
 const BASE_URL = process.env.EXPO_PUBLIC_SOCIAL_SERVER_URL ?? '';
+if (!BASE_URL) {
+    console.warn('[socialApi] EXPO_PUBLIC_SOCIAL_SERVER_URL is not set — social features will be unavailable');
+}
 
 export interface ContestMeta {
     id: string;

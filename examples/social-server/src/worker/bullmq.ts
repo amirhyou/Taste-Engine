@@ -4,11 +4,27 @@ import { withBindings } from '../observability/logger';
 
 // BullMQ bundles its own ioredis, so we pass a plain connection config rather
 // than the shared Redis instance to avoid a type mismatch between the two copies.
-const connection = {
-  host: process.env.REDIS_HOST ?? '127.0.0.1',
-  port: Number(process.env.REDIS_PORT ?? 6379),
-  maxRetriesPerRequest: null as unknown as undefined,
-};
+function parseBullMQConnection() {
+  const url = process.env.REDIS_URL;
+  if (url) {
+    const parsed = new URL(url);
+    return {
+      host: parsed.hostname,
+      port: Number(parsed.port) || 6379,
+      password: parsed.password || undefined,
+      maxRetriesPerRequest: null as unknown as undefined,
+    };
+  }
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('REDIS_URL is required in production');
+  }
+  return {
+    host: process.env.REDIS_HOST ?? '127.0.0.1',
+    port: Number(process.env.REDIS_PORT ?? 6379),
+    maxRetriesPerRequest: null as unknown as undefined,
+  };
+}
+const connection = parseBullMQConnection();
 
 export const eventQueue = new Queue('ContestEventsQueue', {
   connection,

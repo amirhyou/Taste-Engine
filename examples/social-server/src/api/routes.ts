@@ -80,10 +80,13 @@ const ReportSchema = z.object({
 
 function getClientIp(c: Context) {
   return (
+    // Fly.io injects fly-client-ip from its edge — cannot be spoofed by clients
+    c.req.header('fly-client-ip') ??
+    // Cloudflare sets cf-connecting-ip — trusted when behind CF proxy
+    c.req.header('cf-connecting-ip') ??
+    // x-forwarded-for is only trusted when behind a known reverse proxy
     c.req.header('x-forwarded-for')?.split(',')[0]?.trim() ??
     c.req.header('x-real-ip') ??
-    c.req.raw.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
-    c.req.raw.headers.get('cf-connecting-ip') ??
     undefined
   );
 }

@@ -25,6 +25,7 @@ RUN npm run build -w packages/core
 RUN npm run build -w examples/social-server
 
 WORKDIR /repo/examples/social-server
+ENV PORT=3001
 EXPOSE 3001
 
 CMD ["node", "dist/index.js"]

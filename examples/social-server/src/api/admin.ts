@@ -7,6 +7,7 @@ import { hideContest, lockContest } from '../redis/contestMeta';
 import { banDevice } from '../redis/moderation';
 import { writeAuditRecord } from '../redis/audit';
 import { getReport, listPendingReports, REPORT_STATUS, updateReportStatus } from '../redis/reports';
+import { logger } from '../observability/logger';
 
 type Variables = JwtVariables;
 
@@ -54,7 +55,9 @@ function parseQueryOrRespond<T extends z.ZodTypeAny>(
 function getAdminId(c: Context): string {
   const payload = c.get('jwtPayload') as Record<string, unknown> | undefined;
   const candidate = payload?.sub ?? payload?.userId ?? payload?.id;
-  return typeof candidate === 'string' && candidate.length > 0 ? candidate : 'unknown-admin';
+  if (typeof candidate === 'string' && candidate.length > 0) return candidate;
+  logger.warn({ payload }, 'admin.unknown_id: JWT payload missing sub/userId/id — audit record will use fallback');
+  return 'unknown-admin';
 }
 
 adminApp.use('/admin/*', jwt({ secret, alg: 'HS256' }));

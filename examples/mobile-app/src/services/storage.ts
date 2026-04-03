@@ -69,18 +69,20 @@ export const StorageService = {
 
 /**
  * Secure storage for sensitive OAuth tokens.
- * Falls back to localStorage on web (not truly secure, but functional for dev).
+ * On web, uses sessionStorage (cleared on tab close) rather than localStorage.
+ * sessionStorage is still vulnerable to XSS but avoids persistent token exposure.
+ * For production web deployments, consider a server-side session approach instead.
  */
 export const AuthStorage = Platform.OS === 'web'
     ? {
           saveToken: async (key: string, value: string) => {
-              localStorage.setItem(key, value);
+              sessionStorage.setItem(key, value);
           },
           getToken: async (key: string) => {
-              return localStorage.getItem(key);
+              return sessionStorage.getItem(key);
           },
           deleteToken: async (key: string) => {
-              localStorage.removeItem(key);
+              sessionStorage.removeItem(key);
           },
       }
     : {

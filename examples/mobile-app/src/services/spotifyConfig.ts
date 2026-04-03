@@ -4,5 +4,7 @@ export const SPOTIFY_DISCOVERY = {
     tokenEndpoint: 'https://accounts.spotify.com/api/token',
 };
 
-// Public client id provided by the user (PKCE flow).
-export const SPOTIFY_CLIENT_ID = '9fe641971da145ada727eb254418e531';
+// Set EXPO_PUBLIC_SPOTIFY_CLIENT_ID in your .env file.
+// The fallback value is for local Expo Go development only.
+export const SPOTIFY_CLIENT_ID =
+    process.env.EXPO_PUBLIC_SPOTIFY_CLIENT_ID ?? '9fe641971da145ada727eb254418e531';

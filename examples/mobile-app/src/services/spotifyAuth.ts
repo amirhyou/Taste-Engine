@@ -22,9 +22,9 @@ export function useSpotifyAuth() {
     const isExpoGo = Constants.appOwnership === 'expo';
     const useProxy = Platform.OS !== 'web' && isExpoGo;
     const redirectUri = Platform.OS === 'web'
-        ? 'http://127.0.0.1:8081'
+        ? (process.env.EXPO_PUBLIC_WEB_REDIRECT_URI ?? 'http://127.0.0.1:8081')
         : (useProxy
-            ? 'https://auth.expo.io/@amirhyou/tastify'
+            ? makeRedirectUri({ useProxy: true })
             : makeRedirectUri({ scheme: 'taste-engine', path: 'oauth' }));
 
     const [request, response, promptAsync] = useAuthRequest(
