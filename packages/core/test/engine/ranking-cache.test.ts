@@ -6,7 +6,7 @@ describe('Engine ranking cache behavior', () => {
     const engine = new Engine({ seed: 9, k: 3 });
     engine.addItems(['a', 'b', 'c', 'd']);
     engine.ingest({ a: 'a', b: 'b', result: 'a', t: 1 });
-    engine.ingest({ a: 'c', b: 'd', result: 'd', t: 2 });
+    engine.ingest({ a: 'c', b: 'd', result: 'b', t: 2 });
 
     const s1 = engine.status(5).fullRanking;
     const s2 = engine.status(5).fullRanking;
