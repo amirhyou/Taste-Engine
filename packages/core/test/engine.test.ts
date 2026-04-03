@@ -51,4 +51,45 @@ describe('Engine', () => {
 
     expect(restored.status().topKSet.length).toBe(2);
   });
+
+  it('status() does not affect nextPair() output', () => {
+    const engine = new Engine({ seed: 1 });
+    engine.addItems(['a', 'b', 'c', 'd', 'e']);
+    engine.ingest({ a: 'a', b: 'b', result: 'a', t: 1 });
+    engine.ingest({ a: 'c', b: 'd', result: 'd', t: 2 });
+
+    const snap = engine.snapshot();
+
+    const clean = new Engine();
+    clean.loadSnapshot(snap);
+    const base = clean.nextPair();
+
+    const noisy = new Engine();
+    noisy.loadSnapshot(snap);
+    for (let i = 0; i < 10; i++) noisy.status();
+    const after = noisy.nextPair();
+
+    expect(after.a).toBe(base.a);
+    expect(after.b).toBe(base.b);
+  });
+
+  it('loadSnapshot restores exact mu and sigma', () => {
+    const t0 = Date.now();
+    const engine = new Engine({ k: 2, seed: 99 });
+    engine.addItems(['a', 'b', 'c', 'd']);
+    engine.ingest({ a: 'a', b: 'b', result: 'a', t: t0 });
+    engine.ingest({ a: 'c', b: 'd', result: 'c', t: t0 + 1 });
+    engine.ingest({ a: 'a', b: 'c', result: 'a', t: t0 + 2 });
+
+    const snap = engine.snapshot();
+    const restored = new Engine();
+    restored.loadSnapshot(snap);
+
+    const queryTime = t0 + 3;
+    const origStatus = engine.status(queryTime);
+    const restStatus = restored.status(queryTime);
+
+    expect(restStatus.fullRanking).toEqual(origStatus.fullRanking);
+    expect(restStatus.stability).toBeCloseTo(origStatus.stability, 4);
+  });
 });
