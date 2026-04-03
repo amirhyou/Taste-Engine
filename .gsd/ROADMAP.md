@@ -28,7 +28,7 @@
 ## Phases
 
 ### Phase 14: Engine Correctness — Determinism & Side-Effect Fixes
-**Status**: ⬜ Not Started
+**Status**: ✅ Complete
 **Objective**: Make the engine observationally pure — no side effects from reads, no shared mutable RNG across separate logical operations.
 **Scope**:
 - [ ] Give `BoundarySelector` and `computeConfidence` their own RNG instances (seeded deterministically from engine seed) so `status()` and `nextPair()` do not share state.
