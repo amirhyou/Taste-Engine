@@ -37,6 +37,7 @@ export type ConfidenceConfig = {
 export type CycleGuardConfig = {
   enabled: boolean;
   alarmThreshold: number;
+  cycleResponseDepth: number;
 };
 
 export type RunConfig = {

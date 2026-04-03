@@ -25,6 +25,8 @@ export class Engine {
   private readonly pairCounts = new Map<string, number>();
   private readonly eventLog: ComparisonEvent[] = [];
   private selectorRng: Rng;
+  private cycleResponseQueue: PairRecommendation[] = [];
+  private lastCycleResponseAt = -1;
 
   constructor(config: Partial<RunConfig> = {}) {
     this.config = mergeConfig(config);
@@ -84,6 +86,40 @@ export class Engine {
   }
 
   nextPair(): PairRecommendation {
+    // 1. Drain cycle response queue first
+    if (this.cycleResponseQueue.length > 0) {
+      return this.cycleResponseQueue.shift()!;
+    }
+
+    // 2. Evaluate cycle trigger when guard is enabled and new votes have arrived
+    if (this.config.cycleGuard.enabled && this.itemIds.size >= 2 && this.eventLog.length !== this.lastCycleResponseAt) {
+      const ranked = this.rankByMu();
+      const confRng = seededRng(this.config.seed ^ 0xc0ffee);
+      const confidence = computeConfidence(this.model, ranked, this.config, confRng);
+      const cycles = this.findCycles(ranked);
+      const kIdx = Math.min(this.config.k, ranked.length) - 1;
+      const boundaryP = kIdx >= 0 ? (confidence.pInTopK.get(ranked[kIdx]) ?? 0.5) : 0.5;
+      const depth = Math.max(1, Math.floor(this.config.cycleGuard.cycleResponseDepth));
+
+      for (const cluster of cycles) {
+        const isContested = cluster.some((id) => {
+          const p = confidence.pInTopK.get(id) ?? 0;
+          return Math.abs(p - boundaryP) < this.config.cycleGuard.alarmThreshold;
+        });
+        if (isContested) {
+          const pairs = this.buildCycleResponsePairs(cluster, depth);
+          if (pairs.length > 0) {
+            this.lastCycleResponseAt = this.eventLog.length;
+            this.cycleResponseQueue.push(...pairs.slice(1));
+            return pairs[0];
+          }
+        }
+      }
+      // No cycle triggered; mark current event count so we don't re-evaluate until new votes
+      this.lastCycleResponseAt = this.eventLog.length;
+    }
+
+    // 3. Normal selector fallback
     const pool = this.activePool();
     return this.selector.nextPair({
       model: this.model,
@@ -278,6 +314,8 @@ export class Engine {
       this.eventLog.push(event);
     }
     this.selectorRng = seededRng(this.config.seed);
+    this.cycleResponseQueue.length = 0;
+    this.lastCycleResponseAt = -1;
   }
 
   private rankByMu(): ItemId[] {
@@ -291,6 +329,30 @@ export class Engine {
     const tightSize = this.config.pool.tight(this.config.k, n);
     const size = this.eventLog.length < n * 2 ? startSize : tightSize;
     return ranked.slice(0, Math.min(n, Math.max(size, this.config.k + 1)));
+  }
+
+  private buildCycleResponsePairs(cluster: ItemId[], depth: number): PairRecommendation[] {
+    const pairs: { a: ItemId; b: ItemId; count: number }[] = [];
+    for (let i = 0; i < cluster.length; i++) {
+      for (let j = i + 1; j < cluster.length; j++) {
+        const a = cluster[i];
+        const b = cluster[j];
+        const count = this.pairCounts.get(pairKey(a, b)) ?? 0;
+        pairs.push({ a, b, count });
+      }
+    }
+    pairs.sort((x, y) => x.count - y.count);
+    return pairs.slice(0, depth).map(({ a, b }) => ({
+      a,
+      b,
+      meta: {
+        boundaryCross: false,
+        expectedInfoGain: 0.5,
+        sigmaA: this.model.get(a).sigma,
+        sigmaB: this.model.get(b).sigma,
+        repeatCount: this.pairCounts.get(pairKey(a, b)) ?? 0,
+      },
+    }));
   }
 
   private pickAnchors(boundaryAnchors: ItemId[], midAnchors: ItemId[], excluded: ItemId, count: number): ItemId[] {

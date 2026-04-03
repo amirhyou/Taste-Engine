@@ -34,6 +34,7 @@ export const defaultRunConfig: RunConfig = {
   cycleGuard: {
     enabled: true,
     alarmThreshold: 0.2,
+    cycleResponseDepth: 4,
   },
 };
 
