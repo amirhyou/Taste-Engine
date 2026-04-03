@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
+import type { ZodSchema } from 'zod';
 
 function createStorage() {
     if (Platform.OS === 'web') {
@@ -46,6 +47,23 @@ export const StorageService = {
     },
     setJSON: (key: string, value: any): void => {
         mmkv.set(key, JSON.stringify(value));
+    },
+    getValidatedJSON: <T>(key: string, schema: ZodSchema<T>): T | null => {
+        const val = mmkv.getString(key);
+        if (!val) return null;
+        let parsed: unknown;
+        try {
+            parsed = JSON.parse(val);
+        } catch {
+            return null;
+        }
+        const result = schema.safeParse(parsed);
+        if (!result.success) {
+            console.warn(`[storage] Schema validation failed for key "${key}":`, result.error.issues);
+            mmkv.delete(key);
+            return null;
+        }
+        return result.data;
     },
 };
 

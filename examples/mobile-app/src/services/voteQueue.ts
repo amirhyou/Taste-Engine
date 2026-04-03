@@ -1,5 +1,6 @@
 import { StorageService } from './storage';
 import { VotePayload } from './socialApi';
+import { VoteQueueSchema } from '../schemas';
 
 const QUEUE_KEY = 'vote-queue';
 
@@ -16,12 +17,7 @@ export interface PendingVote {
 }
 
 function readQueue(): PendingVote[] {
-    const data = StorageService.getJSON<PendingVote[]>(QUEUE_KEY);
-    if (!Array.isArray(data)) {
-        StorageService.delete(QUEUE_KEY);
-        return [];
-    }
-    return data;
+    return StorageService.getValidatedJSON(QUEUE_KEY, VoteQueueSchema) ?? [];
 }
 
 function writeQueue(queue: PendingVote[]): void {

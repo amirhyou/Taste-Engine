@@ -1,4 +1,5 @@
 import { getDeviceId } from './deviceId';
+import { NextPairResultSchema } from '../schemas';
 
 const BASE_URL = process.env.EXPO_PUBLIC_SOCIAL_SERVER_URL ?? '';
 
@@ -96,11 +97,19 @@ export const socialApi = {
     createContest: (payload: CreateContestPayload): Promise<CreateContestResult> =>
         fetchSocial('/contests', { method: 'POST', body: JSON.stringify(payload) }),
 
-    voteInContest: (contestId: string, payload: VotePayload): Promise<NextPairResult> =>
-        fetchSocial(`/contests/${contestId}/vote`, { method: 'POST', body: JSON.stringify(payload) }),
+    voteInContest: async (contestId: string, payload: VotePayload): Promise<NextPairResult> => {
+        const data = await fetchSocial(`/contests/${contestId}/vote`, { method: 'POST', body: JSON.stringify(payload) });
+        const validated = NextPairResultSchema.safeParse(data);
+        if (!validated.success) throw new Error('Invalid server response for voteInContest');
+        return validated.data;
+    },
 
-    getNextPair: (contestId: string, userId: string): Promise<NextPairResult> =>
-        fetchSocial(`/contests/${contestId}/next?userId=${encodeURIComponent(userId)}`),
+    getNextPair: async (contestId: string, userId: string): Promise<NextPairResult> => {
+        const data = await fetchSocial(`/contests/${contestId}/next?userId=${encodeURIComponent(userId)}`);
+        const validated = NextPairResultSchema.safeParse(data);
+        if (!validated.success) throw new Error('Invalid server response for nextPair');
+        return validated.data;
+    },
 
     publishContest: (contestId: string): Promise<{ status: string }> =>
         fetchSocial(`/contests/${contestId}/publish`, { method: 'POST' }),

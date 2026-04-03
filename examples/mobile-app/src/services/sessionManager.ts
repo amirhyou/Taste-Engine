@@ -1,13 +1,5 @@
 import { StorageService } from './storage';
-
-export interface SessionMeta {
-    playlistId: string;
-    playlistName: string;
-    targetK: number;
-    lastActive: number;
-    status: 'active' | 'archived';
-    engineVersion: string;
-}
+import { SessionIndexSchema, SessionMeta } from '../schemas';
 
 const SESSION_INDEX_KEY = 'taste_session_index';
 const CURRENT_ENGINE_VERSION = '0.1.0'; // To match @taste-engine/core
@@ -17,6 +9,7 @@ export class SessionManager {
 
     constructor() {
         this.index = StorageService.getJSON<Record<string, SessionMeta>>(SESSION_INDEX_KEY) || {};
+        this.index = StorageService.getValidatedJSON(SESSION_INDEX_KEY, SessionIndexSchema) ?? {};
     }
 
     registerSession(playlistId: string, name: string, k: number) {

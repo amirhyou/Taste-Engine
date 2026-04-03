@@ -1,5 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
+import { SavedContestListSchema } from '../schemas';
 
 const KEY = 'tastify_my_contests';
 
@@ -18,7 +19,9 @@ async function load(): Promise<SavedContest[]> {
             ? localStorage.getItem(KEY)
             : await SecureStore.getItemAsync(KEY);
         if (!raw) return [];
-        return JSON.parse(raw) as SavedContest[];
+        const parsed = SavedContestListSchema.safeParse(JSON.parse(raw));
+        if (!parsed.success) return [];
+        return parsed.data;
     } catch {
         return [];
     }
