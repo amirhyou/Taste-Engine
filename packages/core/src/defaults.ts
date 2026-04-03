@@ -11,6 +11,7 @@ export const defaultRunConfig: RunConfig = {
   q: 0.8,
   tau: 0.083, // 8.333 / 100
   beta: 4.167, // 8.333 / 2
+  seed: 42,
   decay: { type: 'exp', halfLifeDays: 30 },
   pool: {
     start: poolFn(8, 80),

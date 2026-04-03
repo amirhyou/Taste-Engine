@@ -23,6 +23,10 @@ export class OnlineModel {
     });
   }
 
+  restoreItem(itemId: ItemId, state: ItemState): void {
+    this.states.set(itemId, state);
+  }
+
   ingest(event: ComparisonEvent, now = event.t): void {
     this.ensureItem(event.a);
     this.ensureItem(event.b);

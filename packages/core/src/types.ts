@@ -44,6 +44,7 @@ export type RunConfig = {
   q: number;
   tau: number;
   beta: number;
+  seed: number;
   decay: DecayConfig;
   pool: PoolConfig;
   boundaryBand: (k: number, n: number) => number;

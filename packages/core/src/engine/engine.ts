@@ -15,7 +15,7 @@ import {
   PairRecommendation,
   RunConfig,
 } from '../types.js';
-import { seededRng } from '../utils/random.js';
+import { seededRng, Rng } from '../utils/random.js';
 
 export class Engine {
   private config: RunConfig;
@@ -24,12 +24,13 @@ export class Engine {
   private readonly itemIds = new Set<ItemId>();
   private readonly pairCounts = new Map<string, number>();
   private readonly eventLog: ComparisonEvent[] = [];
-  private readonly rng = seededRng(1337);
+  private selectorRng: Rng;
 
   constructor(config: Partial<RunConfig> = {}) {
     this.config = mergeConfig(config);
     this.model = new OnlineModel(this.config);
     this.selector = new BoundarySelector(this.config);
+    this.selectorRng = seededRng(this.config.seed);
   }
 
   addItems(ids: ItemId[], now = Date.now()): PairRecommendation[] {
@@ -90,16 +91,22 @@ export class Engine {
       pool,
       k: this.config.k,
       pairCounts: this.pairCounts,
-      rng: this.rng,
+      rng: this.selectorRng,
       explorationRate: this.config.explorationRate,
     });
   }
 
   status(now = Date.now()): EngineStatus {
     const ranked = this.rankByMu();
-    const confidence = computeConfidence(this.model, ranked, this.config, this.rng, now);
+    const confRng = seededRng(this.config.seed ^ 0xc0ffee);
+    const sugRng = seededRng(this.config.seed ^ 0xf00d);
+    const confidence = computeConfidence(this.model, ranked, this.config, confRng, now);
     const stopDecision = shouldStop(ranked, confidence.pInTopK, this.config);
     const cycles = this.config.cycleGuard.enabled ? this.findCycles(ranked) : [];
+    const pool = this.activePool();
+    const sugCtx = { model: this.model, itemIds: [...this.itemIds], pool, k: this.config.k, pairCounts: this.pairCounts, rng: sugRng, explorationRate: this.config.explorationRate };
+    const sug1 = this.selector.nextPair(sugCtx);
+    const sug2 = this.selector.nextPair(sugCtx);
 
     return {
       topKSet: ranked.slice(0, Math.min(this.config.k, ranked.length)),
@@ -110,7 +117,7 @@ export class Engine {
       cycles,
       canStop: stopDecision.canStop,
       reason: stopDecision.reason,
-      nextSuggestions: [this.nextPair(), this.nextPair()],
+      nextSuggestions: [sug1, sug2],
     };
   }
 
@@ -166,10 +173,11 @@ export class Engine {
 
     const needed = this.config.minComparisonsPerItemSeed;
     const exposure = new Map<ItemId, number>(items.map((id) => [id, this.model.get(id).games]));
+    const localCounts = new Map(this.pairCounts);
 
     for (const a of items) {
       while ((exposure.get(a) ?? 0) < needed) {
-        const b = items.find((cand) => cand !== a && (this.pairCounts.get(pairKey(a, cand)) ?? 0) < this.config.repeatCapPerPair);
+        const b = items.find((cand) => cand !== a && (localCounts.get(pairKey(a, cand)) ?? 0) < this.config.repeatCapPerPair);
         if (!b) break;
         out.push({
           a,
@@ -179,12 +187,12 @@ export class Engine {
             expectedInfoGain: 0.5,
             sigmaA: this.model.get(a).sigma,
             sigmaB: this.model.get(b).sigma,
-            repeatCount: this.pairCounts.get(pairKey(a, b)) ?? 0,
+            repeatCount: localCounts.get(pairKey(a, b)) ?? 0,
           },
         });
         exposure.set(a, (exposure.get(a) ?? 0) + 1);
         exposure.set(b, (exposure.get(b) ?? 0) + 1);
-        this.pairCounts.set(pairKey(a, b), (this.pairCounts.get(pairKey(a, b)) ?? 0) + 1);
+        localCounts.set(pairKey(a, b), (localCounts.get(pairKey(a, b)) ?? 0) + 1);
       }
     }
 
@@ -260,10 +268,16 @@ export class Engine {
       this.pairCounts.set(k, v);
     }
 
+    for (const [id, state] of Object.entries(snapshot.states)) {
+      this.model.restoreItem(id, {
+        ...state,
+        uniqueOpponents: new Set(state.uniqueOpponents),
+      });
+    }
     for (const event of snapshot.events) {
-      this.model.ingest(event, event.t);
       this.eventLog.push(event);
     }
+    this.selectorRng = seededRng(this.config.seed);
   }
 
   private rankByMu(): ItemId[] {
@@ -289,6 +303,7 @@ export class Engine {
 const mergeConfig = (partial: Partial<RunConfig>): RunConfig => ({
   ...defaultRunConfig,
   ...partial,
+  seed: partial.seed ?? defaultRunConfig.seed,
   pool: partial.pool ?? defaultRunConfig.pool,
   boundaryBand: partial.boundaryBand ?? defaultRunConfig.boundaryBand,
   onboarding: { ...defaultRunConfig.onboarding, ...(partial.onboarding ?? {}) },
