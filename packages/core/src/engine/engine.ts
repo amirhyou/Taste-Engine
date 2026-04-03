@@ -9,6 +9,7 @@ import { shouldStop } from '../stopping/stopping.js';
 import {
   ComparisonEvent,
   DecayConfig,
+  EngineContextView,
   EngineSnapshot,
   EngineStatus,
   ItemId,
@@ -27,6 +28,8 @@ export class Engine {
   private selectorRng: Rng;
   private cycleResponseQueue: PairRecommendation[] = [];
   private lastCycleResponseAt = -1;
+  private rankingCache: ItemId[] = [];
+  private rankingDirty = true;
 
   constructor(config: Partial<RunConfig> = {}) {
     this.config = mergeConfig(config);
@@ -45,6 +48,8 @@ export class Engine {
     }
 
     if (added.length === 0) return [];
+
+    this.rankingDirty = true;
 
     const ranked = this.rankByMu();
     const boundary = this.config.boundaryBand(this.config.k, ranked.length);
@@ -83,9 +88,12 @@ export class Engine {
     this.eventLog.push(event);
     const key = pairKey(event.a, event.b);
     this.pairCounts.set(key, (this.pairCounts.get(key) ?? 0) + 1);
+    this.rankingDirty = true;
   }
 
-  nextPair(): PairRecommendation {
+  nextPair(opts?: { now?: number }): PairRecommendation {
+    const now = opts?.now ?? Date.now();
+
     // 1. Drain cycle response queue first
     if (this.cycleResponseQueue.length > 0) {
       return this.cycleResponseQueue.shift()!;
@@ -95,7 +103,7 @@ export class Engine {
     if (this.config.cycleGuard.enabled && this.itemIds.size >= 2 && this.eventLog.length !== this.lastCycleResponseAt) {
       const ranked = this.rankByMu();
       const confRng = seededRng(this.config.seed ^ 0xc0ffee);
-      const confidence = computeConfidence(this.model, ranked, this.config, confRng);
+      const confidence = computeConfidence(this.model, ranked, this.config, confRng, now);
       const cycles = this.findCycles(ranked);
       const kIdx = Math.min(this.config.k, ranked.length) - 1;
       const boundaryP = kIdx >= 0 ? (confidence.pInTopK.get(ranked[kIdx]) ?? 0.5) : 0.5;
@@ -129,6 +137,7 @@ export class Engine {
       pairCounts: this.pairCounts,
       rng: this.selectorRng,
       explorationRate: this.config.explorationRate,
+      now,
     });
   }
 
@@ -140,9 +149,31 @@ export class Engine {
     const stopDecision = shouldStop(ranked, confidence.pInTopK, this.config);
     const cycles = this.config.cycleGuard.enabled ? this.findCycles(ranked) : [];
     const pool = this.activePool();
-    const sugCtx = { model: this.model, itemIds: [...this.itemIds], pool, k: this.config.k, pairCounts: this.pairCounts, rng: sugRng, explorationRate: this.config.explorationRate };
+    const sugCtx = { model: this.model, itemIds: [...this.itemIds], pool, k: this.config.k, pairCounts: this.pairCounts, rng: sugRng, explorationRate: this.config.explorationRate, now };
     const sug1 = this.selector.nextPair(sugCtx);
     const sug2 = this.selector.nextPair(sugCtx);
+    const perUserVoteCounts = new Map<string, number>();
+    const contextLabels = new Map<string, number>();
+    const contextKeys = new Map<string, number>();
+    const contextKeyValues = new Map<string, number>();
+
+    for (const event of this.eventLog) {
+      if (event.userId) {
+        perUserVoteCounts.set(event.userId, (perUserVoteCounts.get(event.userId) ?? 0) + 1);
+      }
+
+      if (!event.context) continue;
+      if (typeof event.context === 'string') {
+        contextLabels.set(event.context, (contextLabels.get(event.context) ?? 0) + 1);
+        continue;
+      }
+
+      for (const [key, value] of Object.entries(event.context)) {
+        contextKeys.set(key, (contextKeys.get(key) ?? 0) + 1);
+        const pair = `${key}=${value}`;
+        contextKeyValues.set(pair, (contextKeyValues.get(pair) ?? 0) + 1);
+      }
+    }
 
     return {
       topKSet: ranked.slice(0, Math.min(this.config.k, ranked.length)),
@@ -154,7 +185,39 @@ export class Engine {
       canStop: stopDecision.canStop,
       reason: stopDecision.reason,
       nextSuggestions: [sug1, sug2],
+      perUserVoteCounts,
+      contextSummary: {
+        labels: contextLabels,
+        keys: contextKeys,
+        keyValues: contextKeyValues,
+      },
     };
+  }
+
+  filterByContext(key: string): EngineContextView {
+    const events = this.eventLog
+      .filter((event) => {
+        if (!event.context) return false;
+        if (typeof event.context === 'string') return event.context === key;
+        return key in event.context;
+      })
+      .map((event) => ({
+        ...event,
+        context: typeof event.context === 'object' && event.context !== null ? { ...event.context } : event.context,
+      }));
+
+    const derived = new Engine(this.config);
+    derived.addItems([...this.itemIds]);
+    for (const event of events) {
+      derived.ingest(event, event.t);
+    }
+
+    return Object.freeze({
+      key,
+      eventCount: events.length,
+      events,
+      status: (now = Date.now()) => derived.status(now),
+    });
   }
 
   isConverged(): boolean {
@@ -316,10 +379,16 @@ export class Engine {
     this.selectorRng = seededRng(this.config.seed);
     this.cycleResponseQueue.length = 0;
     this.lastCycleResponseAt = -1;
+    this.rankingCache = [];
+    this.rankingDirty = true;
   }
 
   private rankByMu(): ItemId[] {
-    return [...this.itemIds].sort((a, b) => this.model.get(b).mu - this.model.get(a).mu);
+    if (this.rankingDirty) {
+      this.rankingCache = [...this.itemIds].sort((a, b) => this.model.get(b).mu - this.model.get(a).mu);
+      this.rankingDirty = false;
+    }
+    return [...this.rankingCache];
   }
 
   private activePool(): ItemId[] {

@@ -80,7 +80,7 @@
 ---
 
 ### Phase 17: API Completeness & Performance
-**Status**: ⬜ Not Started
+**Status**: ✅ Complete
 **Objective**: Wire remaining declared-but-unused fields, align the public API with the plan, and eliminate the O(n) sort in the hot path.
 **Depends on**: Phase 15
 **Scope**:

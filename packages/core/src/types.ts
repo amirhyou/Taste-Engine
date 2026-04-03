@@ -82,6 +82,12 @@ export type PairRecommendation = {
   meta: PairMeta;
 };
 
+export type ContextSummary = {
+  labels: ReadonlyMap<string, number>;
+  keys: ReadonlyMap<string, number>;
+  keyValues: ReadonlyMap<string, number>;
+};
+
 export type EngineStatus = {
   topKSet: ItemId[];
   fullRanking: ItemId[];
@@ -92,6 +98,15 @@ export type EngineStatus = {
   canStop: boolean;
   reason: string;
   nextSuggestions: PairRecommendation[];
+  perUserVoteCounts: ReadonlyMap<UserId, number>;
+  contextSummary: ContextSummary;
+};
+
+export type EngineContextView = {
+  key: string;
+  eventCount: number;
+  events: ReadonlyArray<ComparisonEvent>;
+  status: (now?: number) => EngineStatus;
 };
 
 export type EngineSnapshot = {

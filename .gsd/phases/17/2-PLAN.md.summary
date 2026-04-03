@@ -1,0 +1,45 @@
+---
+phase: 17
+plan: 2
+wave: 1
+completed_at: 2026-04-03
+---
+
+# Plan 17.2 Summary: Remove Repeated Full Sorts with Ranking Cache
+
+## Objective
+Eliminate repeated hot-path full sorting by adding a dirty-flag ranking cache in `Engine` and lock behavior with regression tests.
+
+## Work Completed
+
+### Task 1: Implemented cached ranking with explicit invalidation
+- Added `rankingCache: ItemId[]` and `rankingDirty: boolean` private fields to Engine
+- Updated `rankByMu()` to recompute only when dirty flag is set
+- Marked cache dirty on all mutations: `addItems()`, `ingest()`, `loadSnapshot()`
+- Cache is deterministic and maintained across seeded operations
+
+**Files modified:**
+- `packages/core/src/engine/engine.ts` — ranking cache implementation, dirty-flag invalidation
+
+### Task 2: Added cache regression and selector-path tests
+- Created `packages/core/test/engine/ranking-cache.test.ts` with 4 focused tests:
+  1. Identical ranking across repeated status() calls on unchanged state
+  2. Ranking updates after ingest and addItems mutations
+  3. Ranking stability through snapshot and restore cycles
+  4. nextPair determinism with interleaved status calls
+- All regression tests passing deterministically
+
+**Files created:**
+- `packages/core/test/engine/ranking-cache.test.ts` — 4/4 tests passing
+
+## Test Results
+- ✅ ranking-cache tests: 4/4 passing
+- ✅ All existing engine tests remain passing (8/8)
+- ✅ No type errors
+- ✅ No behavioral regressions in selector or model layers
+
+## Verification Criteria
+- [x] Full-sort hot path is replaced by dirty-flag cached ranking
+- [x] Ranking correctness is preserved across ingest/add/load flows
+- [x] Active pool behavior remains stable for equivalent engine state
+- [x] Targeted regression tests passing

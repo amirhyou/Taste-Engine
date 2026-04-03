@@ -1,0 +1,47 @@
+---
+phase: 17
+plan: 1
+wave: 1
+completed_at: 2026-04-03
+---
+
+# Plan 17.1 Summary: Wire API Surfaces for Context, User Counters, and Time-Aware nextPair
+
+## Objective
+Implement the missing public API surfaces: context visibility in status, per-user vote counts, and backward-compatible `nextPair({ now? })` support.
+
+## Work Completed
+
+### Task 1: Extended public types and engine status output
+- Added `ContextSummary` type with `labels`, `keys`, and `keyValues` read-only maps
+- Extended `EngineStatus` with `perUserVoteCounts: ReadonlyMap<UserId, number>` and `contextSummary: ContextSummary`
+- Updated `Engine.status(now?)` to aggregate event log by userId and context in real-time
+- All existing status fields remain unchanged and type-compatible
+
+**Files modified:**
+- `packages/core/src/types.ts` — added new types
+- `packages/core/src/engine/engine.ts` — implemented aggregation logic in status()
+
+### Task 2: Added context filter helper and time-aware nextPair signature
+- Changed `nextPair()` signature to `nextPair(opts?: { now?: number }): PairRecommendation`
+- Backward-compatible: zero-argument calls work unchanged
+- Added `filterByContext(key: string)` helper that returns a read-only `EngineContextView`
+- Filtered view is derived and does not mutate base engine state
+- Updated `SelectorContext` to include `now` parameter and propagate through pair scoring
+
+**Files modified:**
+- `packages/core/src/engine/engine.ts` — nextPair signature, filterByContext implementation
+- `packages/core/src/selector/selector.ts` — accept now in context, pass to model.predict/get calls
+- `packages/core/src/index.ts` — export new types
+- `packages/core/test/engine/api-completeness.test.ts` — 3 focused tests covering all API surfaces
+
+## Test Results
+- ✅ api-completeness tests: 3/3 passing
+- ✅ All existing engine tests remain passing (8/8)
+- ✅ No type errors
+
+## Verification Criteria
+- [x] `EngineStatus` includes per-user vote count surface
+- [x] Context data is visible and queryable through public API
+- [x] `nextPair({ now })` is supported with no regression for existing callers
+- [x] Focused API tests passing

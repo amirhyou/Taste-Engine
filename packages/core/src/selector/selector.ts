@@ -10,6 +10,7 @@ export type SelectorContext = {
   pairCounts: Map<string, number>;
   rng: Rng;
   explorationRate: number;
+  now: number;
 };
 
 export const pairKey = (a: ItemId, b: ItemId): string => (a < b ? `${a}::${b}` : `${b}::${a}`);
@@ -18,7 +19,7 @@ export class BoundarySelector {
   constructor(private readonly config: RunConfig) { }
 
   nextPair(ctx: SelectorContext): PairRecommendation {
-    const ranked = [...ctx.pool].sort((a, b) => ctx.model.get(b).mu - ctx.model.get(a).mu);
+    const ranked = [...ctx.pool].sort((a, b) => ctx.model.get(b, ctx.now).mu - ctx.model.get(a, ctx.now).mu);
     const b = this.config.boundaryBand(ctx.k, ctx.itemIds.length);
     let boundaryStart = Math.max(0, ctx.k - b);
     let boundaryEnd = Math.min(ranked.length - 1, ctx.k + b);
@@ -58,14 +59,14 @@ export class BoundarySelector {
       }
 
       const bestFallback = candidates.length > 0 ? pickOne(candidates, ctx.rng) : (ctx.pool.find((item) => item !== a) ?? a);
-      return buildMeta(a, bestFallback, ranked, ctx.model, ctx.pairCounts, ctx.k);
+      return buildMeta(a, bestFallback, ranked, ctx.model, ctx.pairCounts, ctx.k, ctx.now);
     }
 
     const bestB = candidateB
-      .map((id) => ({ id, score: pairScore(a, id, ranked, ctx.model, ctx.pairCounts, ctx.k, b, this.config.minUniqueOpponentsInPool) }))
+      .map((id) => ({ id, score: pairScore(a, id, ranked, ctx.model, ctx.pairCounts, ctx.k, b, this.config.minUniqueOpponentsInPool, ctx.now) }))
       .sort((x, y) => y.score - x.score)[0].id;
 
-    return buildMeta(a, bestB, ranked, ctx.model, ctx.pairCounts, ctx.k);
+    return buildMeta(a, bestB, ranked, ctx.model, ctx.pairCounts, ctx.k, ctx.now);
   }
 }
 
@@ -91,10 +92,11 @@ const pairScore = (
   k: number,
   boundaryBand: number,
   minUniqueOpponents: number,
+  now: number,
 ): number => {
-  const p = model.predict(a, b);
+  const p = model.predict(a, b, now);
   const uncertainMatch = p * (1 - p);
-  const sigma = model.get(a).sigma + model.get(b).sigma;
+  const sigma = model.get(a, now).sigma + model.get(b, now).sigma;
   const repeatPenalty = (pairCounts.get(pairKey(a, b)) ?? 0) * 0.4;
 
   const aRank = ranked.indexOf(a);
@@ -119,19 +121,20 @@ const buildMeta = (
   model: OnlineModel,
   pairCounts: Map<string, number>,
   k: number,
+  now: number,
 ): PairRecommendation => {
   const aRank = ranked.indexOf(a);
   const bRank = ranked.indexOf(b);
   const boundaryCross = (aRank < k && bRank >= k) || (bRank < k && aRank >= k);
-  const p = model.predict(a, b);
+  const p = model.predict(a, b, now);
   return {
     a,
     b,
     meta: {
       boundaryCross,
       expectedInfoGain: p * (1 - p),
-      sigmaA: model.get(a).sigma,
-      sigmaB: model.get(b).sigma,
+      sigmaA: model.get(a, now).sigma,
+      sigmaB: model.get(b, now).sigma,
       repeatCount: pairCounts.get(pairKey(a, b)) ?? 0,
     },
   };
