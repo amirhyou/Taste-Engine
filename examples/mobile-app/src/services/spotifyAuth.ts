@@ -24,7 +24,7 @@ export function useSpotifyAuth() {
     const redirectUri = Platform.OS === 'web'
         ? (process.env.EXPO_PUBLIC_WEB_REDIRECT_URI ?? 'http://127.0.0.1:8081')
         : (useProxy
-            ? makeRedirectUri({ useProxy: true })
+            ? makeRedirectUri()
             : makeRedirectUri({ scheme: 'taste-engine', path: 'oauth' }));
 
     const [request, response, promptAsync] = useAuthRequest(
