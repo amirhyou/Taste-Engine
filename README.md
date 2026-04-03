@@ -1,6 +1,22 @@
 # Taste Engine
 
+[![npm](https://img.shields.io/npm/v/@taste-engine/core)](https://www.npmjs.com/package/@taste-engine/core)
+[![npm](https://img.shields.io/npm/v/@taste-engine/adapters)](https://www.npmjs.com/package/@taste-engine/adapters)
+[![CI](https://github.com/YOUR_ORG/taste-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_ORG/taste-engine/actions/workflows/ci.yml)
+
 TypeScript library for **high-precision identification of Top-K items** from noisy, pairwise human preferences. Built for scenarios where gathering a full ranking is too expensive or inconsistent (e.g., voting on 5,000 photos, judging recipe variants, or picking winners in a tournament).
+
+## Installation
+
+```bash
+npm install @taste-engine/core
+```
+
+For validation schemas, codecs, and Hono/Express adapters:
+
+```bash
+npm install @taste-engine/adapters
+```
 
 ## Key Features
 

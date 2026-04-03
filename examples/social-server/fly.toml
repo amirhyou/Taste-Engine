@@ -1,0 +1,32 @@
+# Fly.io deployment config for taste-engine social-server
+# Build context is the monorepo root (required for workspace deps)
+# Deploy: fly deploy --config examples/social-server/fly.toml
+
+app = "taste-engine-social"
+primary_region = "syd"
+
+[build]
+  dockerfile = "examples/social-server/Dockerfile"
+  # Build context must be monorepo root — set via fly deploy --dockerfile flag
+  # or by running fly deploy from the repo root
+
+[http_service]
+  internal_port = 3001
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    grace_period = "10s"
+    interval = "30s"
+    method = "GET"
+    timeout = "5s"
+    path = "/health"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "3001"
+
+# Redis: attach via `fly redis attach <redis-name>` — injects REDIS_URL automatically
+# Do NOT hardcode credentials here; use fly secrets set REDIS_URL=...
