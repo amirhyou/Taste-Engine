@@ -160,4 +160,34 @@ Phase 5 executed successfully. Initialized Expo Mobile MVP with full Spotify PKC
 - Server: Vote flow + Redis ops have test coverage
 - No validation errors on storage deserialization
 
+---
+
+### Phase 13: CI/CD & Package Publishing
+**Status**: ⬜ Not Started
+**Objective**: Automate testing, versioning, and npm publishing; establish deployment pipeline for social server.
+**Depends on**: Phase 12
+**Scope**:
+- [ ] **GitHub Actions — CI** (0.5 days)
+  - `ci.yml`: build + test on every push / PR (packages/core, packages/adapters, typecheck)
+- [ ] **GitHub Actions — Release** (0.5 days)
+  - `release.yml`: automated Version PR + npm publish via `changesets/action@v1`
+  - Configure `NPM_TOKEN` secret
+- [ ] **Package Publish Readiness** (1 day)
+  - Add `"license"` field to `packages/core/package.json` and `packages/adapters/package.json`
+  - Add `prepublishOnly` script to adapters
+  - Verify `@taste-engine/adapters` has real exports (post-Phase 12)
+  - Create initial changeset and do first manual publish
+- [ ] **Social Server Deploy** (1 day)
+  - Add `fly.toml` to `examples/social-server/`
+  - Add deploy step to `release.yml` triggered on social-server file changes
+- [ ] **Developer Experience** (0.5 days)
+  - Write `CONTRIBUTING.md` explaining Changesets workflow
+  - Update root `README.md` with npm install badges and instructions
+
+**Verification**:
+- Push to `main` → CI passes (build + tests green)
+- Merge of Version PR → packages published to npm
+- `npm install @taste-engine/core` works from a fresh project
+- Social server Docker image deploys successfully to Fly.io
+
 
